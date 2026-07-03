@@ -36,7 +36,12 @@ export class StorageService {
         this.logger.log(`StorageService hazır (bucket: ${this.bucket})`);
     }
 
-    // upload / delete / extFromMime AYNEN kalıyor — değişiklik yok
+    /**
+     * Health Check için hazır olma durumu
+     */
+    isReady(): boolean {
+        return !!this.client;
+    }
 
     /**
      * Bir dosyayı R2'ye yükler, public URL döner.
