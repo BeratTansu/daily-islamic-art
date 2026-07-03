@@ -1,0 +1,32 @@
+# Daily Islamic Art — Proje Kuralları
+
+## Proje
+Islamic art keşif/koleksiyon platformu. Faz 1: keşif + koleksiyon + wallpaper + widget.
+Faz 2: fractional ownership (Goldframer lead funnel). Faz 3: marketplace.
+Faz 2/3 kodları feature-flag ile kapalı, mevcut kodu bozmadan eklenebilir olmalı.
+
+## Stack
+- Backend: NestJS + Prisma + PostgreSQL (Docker, port 5433) + Redis
+- Mobil: React Native + Expo | Web: Next.js + Tailwind
+- Dil: TypeScript | Deploy: Docker + Nginx
+
+## Monorepo yapısı
+- pnpm workspace. apps/ (uygulamalar) + packages/ (paylaşılan).
+- packages/database (@dia/database): Prisma client custom output path'e generate ediliyor
+  (packages/database/generated/client — pnpm symlink sorunu bu yüzden). Import'larda /index.js gerekli.
+
+## Kurulu modüller (apps/api)
+- PrismaModule (@Global) + PrismaService (OnModuleInit/Destroy lifecycle).
+- AuthModule: register/login/refresh/me + logout.
+  - argon2 şifre hash. JWT çift secret (access 15dk + refresh 7gün).
+  - Refresh token DB'de argon2 hash'li (rotation destekli). passwordHash response'a sızmıyor.
+  - Passport-jwt stratejisi + JwtAuthGuard. ConfigModule global, .env yükleniyor.
+
+## Kod yaklaşımı
+- Önce mimari mantık, sonra kod. Kararları açıkla.
+- Tekrar eden yapı (CRUD/DTO) için BİR tam örnek ver, gerisini ben çoğaltırım.
+- NestJS'te Controller/Service/Module ayrımına sadık kal.
+- Türkçe yanıt, samimi ama profesyonel. İngilizce teknik terimleri koru.
+
+## Ben
+3. sınıf yazılım müh. öğrencisiyim, solo staj projesi. Google Play → App Store.

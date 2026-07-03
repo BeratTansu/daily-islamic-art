@@ -1,0 +1,193 @@
+// packages/database/prisma/schema.prisma
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────── ÇEKİRDEK ───────────
+
+model User {
+  id                String   @id @default(cuid())
+  email             String   @unique
+  passwordHash      String
+  displayName       String
+  avatarUrl         String?
+  role              Role     @default(USER)
+  createdAt         DateTime @default(now())
+  refreshTokenHash  String? 
+  collections       Collection[]
+  likes             Like[]
+  interests         OwnershipInterest[] // Faz2
+  artistProfile     ArtistProfile?      // Faz3
+  orders            Order[]             // + eklendi: Order.buyer ters ilişkisi
+}
+
+enum Role {
+  USER
+  ADMIN
+  ARTIST
+}
+
+model Artist {
+  id             String   @id @default(cuid())
+  name           String
+  slug           String   @unique
+  bio            String?
+  era            String?
+  country        String?
+  avatarUrl      String?
+  isContemporary Boolean  @default(false)
+  linkedUserId   String? // Faz3: ARTIST kullanıcısıyla eşleşme
+  createdAt      DateTime @default(now())
+
+  artworks Artwork[]
+}
+
+model Artwork {
+  id      String @id @default(cuid())
+  title   String?
+  slug    String @unique
+  artistId String
+  artist  Artist @relation(fields: [artistId], references: [id])
+
+  type   ArtworkType
+  script String?
+  period String?
+  medium String?
+  dimensions String?
+
+  // İçerik / anlam
+  arabicText  String?
+  translation String?
+  sourceRef   String?
+  description String?
+
+  // Görseller
+  imageUrl     String
+  thumbUrl     String?
+  colorPalette Json? // filtre + wallpaper arka planı
+
+  // Yayın
+  isPublished Boolean   @default(true)
+  featuredAt  DateTime? // "günün eseri"
+  createdAt   DateTime  @default(now())
+
+  likes         Like[]
+  inCollections CollectionItem[]
+  ownership     ArtworkOwnership? // Faz2 (pasif)
+  listing       MarketListing?    // Faz3 (pasif)
+
+  @@index([type])
+  @@index([featuredAt])
+}
+
+enum ArtworkType {
+  HAT
+  TEZHIP
+  MINYATUR
+  EBRU
+  CINI
+  DIGER
+}
+
+model Collection {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  name      String
+  isPublic  Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  items CollectionItem[]
+}
+
+model CollectionItem {
+  id           String     @id @default(cuid())
+  collectionId String
+  collection   Collection @relation(fields: [collectionId], references: [id])
+  artworkId    String
+  artwork      Artwork    @relation(fields: [artworkId], references: [id])
+  addedAt      DateTime   @default(now())
+
+  @@unique([collectionId, artworkId])
+}
+
+model Like {
+  id        String   @id @default(cuid())
+  userId    String
+  artworkId String
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
+  artwork   Artwork  @relation(fields: [artworkId], references: [id])
+
+  @@unique([userId, artworkId])
+}
+
+// ─────────── FAZ 2: FRACTIONAL OWNERSHIP (pasif) ───────────
+
+model ArtworkOwnership {
+  id              String   @id @default(cuid())
+  artworkId       String   @unique
+  artwork         Artwork  @relation(fields: [artworkId], references: [id])
+  isInvestable    Boolean  @default(false)
+  totalShares     Int?
+  remainingShares Int?
+  pricePerShare   Decimal?
+  currency        String?  @default("TRY")
+  valuation       Decimal?
+  goldframerRef   String?
+
+  interests OwnershipInterest[]
+}
+
+model OwnershipInterest {
+  id          String   @id @default(cuid())
+  userId      String
+  ownershipId String
+  shares      Int?
+  status      String   @default("PENDING") // PENDING | CONTACTED | CONVERTED
+  createdAt   DateTime @default(now())
+
+  user      User             @relation(fields: [userId], references: [id])
+  ownership ArtworkOwnership @relation(fields: [ownershipId], references: [id])
+}
+
+// ─────────── FAZ 3: MARKETPLACE (pasif) ───────────
+
+model ArtistProfile {
+  id         String  @id @default(cuid())
+  userId     String  @unique
+  user       User    @relation(fields: [userId], references: [id])
+  verified   Boolean @default(false)
+  payoutInfo Json?
+}
+
+model MarketListing {
+  id        String   @id @default(cuid())
+  artworkId String   @unique
+  artwork   Artwork  @relation(fields: [artworkId], references: [id])
+  price     Decimal
+  currency  String   @default("TRY")
+  stock     Int      @default(1)
+  status    String   @default("DRAFT") // DRAFT | ACTIVE | SOLD
+  createdAt DateTime @default(now())
+
+  orders Order[]
+}
+
+model Order {
+  id        String   @id @default(cuid())
+  listingId String
+  buyerId   String
+  amount    Decimal
+  status    String   @default("CREATED") // CREATED | PAID | FULFILLED | REFUNDED
+  createdAt DateTime @default(now())
+
+  listing MarketListing @relation(fields: [listingId], references: [id])
+  buyer   User          @relation(fields: [buyerId], references: [id]) // + eklendi
+}

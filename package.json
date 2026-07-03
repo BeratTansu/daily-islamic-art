@@ -1,0 +1,11 @@
+{
+    "name": "daily-islamic-art",
+    "private": true,
+    "scripts": {
+      "db:generate": "pnpm --filter @dia/database generate",
+      "db:migrate": "pnpm --filter @dia/database migrate",
+      "db:studio": "pnpm --filter @dia/database studio",
+      "infra:up": "docker compose up -d",
+      "infra:down": "docker compose down"
+    }
+  }

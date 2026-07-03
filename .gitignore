@@ -1,0 +1,38 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Environment (ASLA commit'lenmemeli)
+.env
+.env.local
+.env.*.local
+*.env
+
+# Prisma generated client (custom output path)
+packages/database/generated/
+
+# Build çıktıları
+dist/
+build/
+.next/
+out/
+
+# Expo / React Native
+.expo/
+*.orig.*
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# OS / IDE
+.DS_Store
+Thumbs.db
+.idea/
+*.swp
+
+# Test / coverage
+coverage/
+
+# Cursor (istersen kalsın — .cursorrules commit'lenir, aşağıda not var)
