@@ -1,14 +1,29 @@
 # Daily Islamic Art — Proje Kuralları
 
 ## Proje
-Islamic art keşif/koleksiyon platformu. Faz 1: keşif + koleksiyon + wallpaper + widget.
-Faz 2: fractional ownership (Goldframer lead funnel). Faz 3: marketplace.
-Faz 2/3 kodları feature-flag ile kapalı, mevcut kodu bozmadan eklenebilir olmalı.
+Islamic art keşif/koleksiyon platformu. Mobil (React Native + Expo) ana ürün;
+web (Next.js) SADECE admin paneli — kullanıcıya dönük web yok.
+- Faz 1 (AKTİF — MVP): keşif + koleksiyon + wallpaper + widget.
+- Faz 2/3 (roadmap): fractional ownership + marketplace.
+Faz 2/3 için KOD YOK — sadece Prisma şemasında model + roadmap yorumu.
+Feature-flag anlatısı terk edildi; flag yok, controller/service/DTO/endpoint yok
+ve eklenmeyecek. Detaylar yüklü dokümanlarda.
+
+## MVP First (temel felsefe)
+Enterprise düşünce yapısıyla tasarla, MVP kapsamında implemente et. İki uçtan da kaçın:
+ne günü kurtaran kod, ne gereksiz katmanlarla over-engineering.
+- Her yeni özellikte sorgula: MVP için gerçekten gerekli mi / YAGNI'ye uygun mu / over-engineering mi?
+- "İleride lazım olabilir" gerekçesiyle bir şey öneriyorsan bunu ÖZELLİKLE belirt.
+- Gerektiğinde itiraz et, mimari kararları sorgula, daha doğru alternatif öner.
+- SOLID/Clean Architecture'dan ödün verme ama gereksiz abstraction yapma.
 
 ## Stack
-- Backend: NestJS + Prisma + PostgreSQL (Docker, port 5433) + Redis
-- Mobil: React Native + Expo | Web: Next.js + Tailwind
+- Backend: NestJS + Prisma + PostgreSQL (Docker, port 5433) + Redis (ioredis, port 6379)
+- Mobil: React Native + Expo (ana ürün) | Web: Next.js + Tailwind (yalnızca admin paneli)
+- Görsel: Cloudflare R2 (S3-compatible, @aws-sdk/client-s3) + CDN
 - Dil: TypeScript | Deploy: Docker + Nginx
+- Kapsam dışı (bilinçli): Elasticsearch YOK (Postgres yeterli), ayrı monitoring YOK (Nest Logger yeterli)
+- API: setGlobalPrefix YOK → route'lar /auth /artworks /artists (api/v1 prefix'siz), port 3000
 
 ## Monorepo yapısı
 - pnpm workspace. apps/ (uygulamalar) + packages/ (paylaşılan).
@@ -20,13 +35,32 @@ Faz 2/3 kodları feature-flag ile kapalı, mevcut kodu bozmadan eklenebilir olma
 - AuthModule: register/login/refresh/me + logout.
   - argon2 şifre hash. JWT çift secret (access 15dk + refresh 7gün).
   - Refresh token DB'de argon2 hash'li (rotation destekli). passwordHash response'a sızmıyor.
-  - Passport-jwt stratejisi + JwtAuthGuard. ConfigModule global, .env yükleniyor.
+  - Passport-jwt stratejisi + JwtAuthGuard + RolesGuard (@Roles(Role.ADMIN)). ConfigModule global.
+- ArtworkModule + ArtistModule: tam CRUD. Slug otomatik, P2002/P2003 hata yönetimi.
+  - Public okuma açık, yazma admin-only (guard). findAll filtre+sayfalama.
+  - /artworks/daily: manuel featured + deterministik fallback.
+- RedisModule (@Global): feed cache + daily cache + pattern invalidation (SCAN'li).
+- StorageModule (@Global): StorageService (R2, upload/delete, UUID dosya adı). Gün 7.
+
+## Mimari kararlar
+- AdminModule YOK. Admin ayrı modül değil, yetki seviyesi. Write işlemleri ilgili modülde
+  @Roles(Role.ADMIN) guard'ıyla. Ayrı modül ancak domain-dışı admin işi (audit log vb.) çıkınca.
+- HealthModule: /health → DB+Redis+Storage durumu (manuel, Terminus'suz). Gün 7 kapsamı.
+- Storage soyutlaması var çünkü ileride R2→S3 geçişi olabilir (gerçek uzun vade faydası, YAGNI değil).
 
 ## Kod yaklaşımı
-- Önce mimari mantık, sonra kod. Kararları açıkla.
+- Önce mimari mantık, sonra kod. Kararları açıkla (neden/alternatif/MVP'de gerekli mi).
 - Tekrar eden yapı (CRUD/DTO) için BİR tam örnek ver, gerisini ben çoğaltırım.
 - NestJS'te Controller/Service/Module ayrımına sadık kal.
-- Türkçe yanıt, samimi ama profesyonel. İngilizce teknik terimleri koru.
+- Faz 2/3 için kod yazma, mevcut kodu bozma.
+- Adım adım, her adımı test edilebilir ver. Her anlamlı adımdan sonra git commit.
+- Belirsizlikte tek soruyla sor. Emin değilsen uydurma — "doğrulaman lazım" de.
+- Türkçe yanıt, samimi ama profesyonel. İngilizce teknik terimleri koru (feature-flag, endpoint).
+
+## Ortam
+Windows/PowerShell (Invoke-RestMethod ile test, Remove-Item -Recurse -Force). Cursor IDE.
+Test admin: admin2@dia.app / Admin123! (ADMIN rol).
 
 ## Ben
 3. sınıf yazılım müh. öğrencisiyim, solo staj projesi. Google Play → App Store.
+Bu ilk AI-destekli projem; yazılanı ANLAMAK önemli — mimar ben olmalıyım, AI araç.

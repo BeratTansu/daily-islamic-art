@@ -128,7 +128,15 @@ model Like {
   @@unique([userId, artworkId])
 }
 
-// ─────────── FAZ 2: FRACTIONAL OWNERSHIP (pasif) ───────────
+// ═══════════════════════════════════════════════════════════════
+// FAZ 2 — FRACTIONAL OWNERSHIP (Goldframer lead funnel)
+// ───────────────────────────────────────────────────────────────
+// ROADMAP — MVP'de KULLANILMIYOR. Bilinçli olarak geleceğe hazırlık
+// amacıyla veri modelinde tutuluyor. Bu modeller için hiçbir business
+// logic yok: controller/service/DTO/endpoint YOK ve eklenmeyecek.
+// İmplementasyon, ürün Faz 2'ye geçtiğinde yapılacak.
+// Detay: PROJE_DURUMU.md → "Faz 2/3 Statüsü"
+// ═══════════════════════════════════════════════════════════════
 
 model ArtworkOwnership {
   id              String   @id @default(cuid())
@@ -157,7 +165,15 @@ model OwnershipInterest {
   ownership ArtworkOwnership @relation(fields: [ownershipId], references: [id])
 }
 
-// ─────────── FAZ 3: MARKETPLACE (pasif) ───────────
+// ═══════════════════════════════════════════════════════════════
+// FAZ 3 — MARKETPLACE (sanatçı satış platformu)
+// ───────────────────────────────────────────────────────────────
+// ROADMAP — MVP'de KULLANILMIYOR. Geleceğe hazırlık amacıyla veri
+// modelinde tutuluyor. Business logic YOK ve eklenmeyecek.
+// Ödeme, sipariş, sanatçı doğrulama gerektirir — ayrı bir ürün fazı.
+// İmplementasyon, ürün Faz 3'e geçtiğinde yapılacak.
+// Detay: PROJE_DURUMU.md → "Faz 2/3 Statüsü"
+// ═══════════════════════════════════════════════════════════════
 
 model ArtistProfile {
   id         String  @id @default(cuid())
