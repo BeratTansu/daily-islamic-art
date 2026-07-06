@@ -4,6 +4,7 @@ import {
     UploadedFile, UseInterceptors,
     ParseFilePipe, MaxFileSizeValidator, FileTypeValidator,
 } from '@nestjs/common';
+import { FeatureArtworkDto } from './dto/feature-artwork.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ArtworkService } from './artwork.service';
 import { StorageService } from '../storage/storage.service';
@@ -82,6 +83,13 @@ export class ArtworkController {
     @Roles(Role.ADMIN)
     update(@Param('id') id: string, @Body() dto: UpdateArtworkDto) {
         return this.artworkService.update(id, dto);
+    }
+
+    @Patch(':id/featured')
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Roles(Role.ADMIN)
+    setFeatured(@Param('id') id: string, @Body() dto: FeatureArtworkDto) {
+        return this.artworkService.setFeatured(id, dto.featured);
     }
 
     @Delete(':id')

@@ -97,7 +97,7 @@ export class ArtworkService {
         ]);
 
         const result: FeedResult = { items, meta: { page, limit, total, pages: Math.ceil(total / limit) } };
-        
+
         if (cacheable) {
             await this.redis.set(cacheKey, result, 300);
         }
@@ -185,6 +185,38 @@ export class ArtworkService {
             const updated = await this.prisma.artwork.update({ where: { id }, data: dto });
             await this.invalidateArtworkCache(); // ← featuredAt/içerik değişmiş olabilir
             return updated;
+        } catch (e) {
+            this.handlePrismaError(e);
+        }
+    }
+
+    async setFeatured(id: string, featured: boolean) {
+        await this.ensureExists(id);
+        try {
+            if (featured) {
+                // B: tek featured garantisi — eskiyi temizle, hedefi set et (atomik)
+                await this.prisma.$transaction([
+                    this.prisma.artwork.updateMany({
+                        where: { featuredAt: { not: null } },
+                        data: { featuredAt: null },
+                    }),
+                    this.prisma.artwork.update({
+                        where: { id },
+                        data: { featuredAt: new Date() },
+                    }),
+                ]);
+            } else {
+                // Sadece hedefi temizle
+                await this.prisma.artwork.update({
+                    where: { id },
+                    data: { featuredAt: null },
+                });
+            }
+            await this.invalidateArtworkCache(); // daily + feed bayatlamasın
+            return this.prisma.artwork.findUnique({
+                where: { id },
+                include: { artist: true },
+            });
         } catch (e) {
             this.handlePrismaError(e);
         }

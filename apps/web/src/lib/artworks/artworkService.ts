@@ -117,6 +117,10 @@ export const ArtworkService = {
     return ApiClient.delete<void>(`/artworks/${id}`);
   },
 
+  setFeatured(id: string, featured: boolean): Promise<Artwork> {
+    return ApiClient.patch<Artwork>(`/artworks/${id}/featured`, { featured });
+  },
+
   // Artist'te olmayan tek metod: iki-adım upload akışının 1. adımı.
   // FormData'yı ApiClient.upload multipart olarak gönderir (Content-Type set etmez).
   // ⚠️ ApiClient.upload imzasını doğrula — aşağıda (path, formData) varsayıldı.
