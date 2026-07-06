@@ -72,9 +72,13 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
 
   const buildHeaders = (): HeadersInit => {
     const h: Record<string, string> = {
-      'Content-Type': 'application/json',
       ...(headers as Record<string, string>),
     };
+    // FormData ise Content-Type'a dokunma — tarayıcı boundary'yi kendi basar.
+    // Sadece JSON body'de application/json set et.
+    if (!(rest.body instanceof FormData)) {
+      h['Content-Type'] = 'application/json';
+    }
     if (auth) {
       const token = AuthStorage.getAccessToken();
       if (token) h['Authorization'] = `Bearer ${token}`;
@@ -115,4 +119,7 @@ export const ApiClient = {
     request<T>(path, { ...options, method: 'PATCH', body: body ? JSON.stringify(body) : undefined }),
   delete: <T>(path: string, options?: RequestOptions) =>
     request<T>(path, { ...options, method: 'DELETE' }),
+  // Multipart: body doğrudan FormData, stringify YOK.
+  upload: <T>(path: string, formData: FormData, options?: RequestOptions) =>
+    request<T>(path, { ...options, method: 'POST', body: formData }),
 };
