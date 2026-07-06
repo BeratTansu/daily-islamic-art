@@ -2,15 +2,12 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import AuthGuard  from '@/components/AuthGuard';
 import { ArtistService, type Artist } from '@/lib/artists/artistService';
 import { ApiError } from '@/lib/auth/apiClient';
 
 export default function ArtistsListPage() {
   return (
-    <AuthGuard>
-      <ArtistsList />
-    </AuthGuard>
+    <ArtistsList />
   );
 }
 

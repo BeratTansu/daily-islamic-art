@@ -2,16 +2,13 @@
 
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
-import AuthGuard  from '@/components/AuthGuard';
 import { ArtistForm } from '@/components/ArtistForm';
 import { ArtistService, type Artist } from '@/lib/artists/artistService';
 import { ApiError } from '@/lib/auth/apiClient';
 
 export default function EditArtistPage() {
   return (
-    <AuthGuard>
-      <EditArtist />
-    </AuthGuard>
+    <EditArtist />
   );
 }
 
