@@ -1,9 +1,9 @@
-import { Redirect } from 'expo-router';
+import { Redirect, Stack } from 'expo-router';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
-import { useAuth } from '../context/AuthContext';
-import { colors } from '../constants/theme';
+import { useAuth } from '../../context/AuthContext';
+import { colors } from '../../constants/theme';
 
-export default function Index() {
+export default function AppLayout() {
   const { status } = useAuth();
 
   if (status === 'loading') {
@@ -14,7 +14,11 @@ export default function Index() {
     );
   }
 
-  return <Redirect href={status === 'authenticated' ? '/feed' : '/login'} />;
+  if (status === 'unauthenticated') {
+    return <Redirect href="/login" />;
+  }
+
+  return <Stack screenOptions={{ headerShown: false }} />;
 }
 
 const styles = StyleSheet.create({
