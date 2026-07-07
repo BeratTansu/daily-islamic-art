@@ -1,23 +1,303 @@
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { useAuth } from '../../context/AuthContext';
+// src/app/(app)/feed.tsx
+import { useCallback, useEffect, useState } from 'react';
+import {
+    View,
+    Text,
+    FlatList,
+    Image,
+    Pressable,
+    ActivityIndicator,
+    RefreshControl,
+    StyleSheet,
+} from 'react-native';
+import { router } from 'expo-router';
+import {
+    artworkService,
+    ArtworkListItem,
+    ArtworkDetail,
+} from '../../lib/artworks/artworkService';
 import { colors, spacing } from '../../constants/theme';
 
-export default function Feed() {
-  const { signOut } = useAuth();
+const PAGE_LIMIT = 10;
 
-  return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Feed (placeholder)</Text>
-      <TouchableOpacity style={styles.button} onPress={signOut}>
-        <Text style={styles.buttonText}>Çıkış Yap</Text>
-      </TouchableOpacity>
-    </View>
-  );
+const TYPE_LABELS: Record<string, string> = {
+    HAT: 'Hat',
+    TEZHIP: 'Tezhip',
+    MINYATUR: 'Minyatür',
+    EBRU: 'Ebru',
+    CINI: 'Çini',
+    DIGER: 'Diğer',
+};
+
+export default function FeedScreen() {
+    const [items, setItems] = useState<ArtworkListItem[]>([]);
+    const [page, setPage] = useState(1);
+    const [hasMore, setHasMore] = useState(true);
+    const [loading, setLoading] = useState(true); // ilk yükleme
+    const [loadingMore, setLoadingMore] = useState(false); // alt sayfa
+    const [refreshing, setRefreshing] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+
+    const [daily, setDaily] = useState<ArtworkDetail | null>(null);
+
+    // --- Feed ilk sayfa / yenileme ---
+    const loadFirstPage = useCallback(async () => {
+        setError(null);
+        try {
+            const res = await artworkService.list({ page: 1, limit: PAGE_LIMIT });
+            setItems(res.items);
+            setPage(res.meta.page);
+            setHasMore(res.meta.page < res.meta.pages);
+        } catch (e) {
+            setError('Eserler yüklenemedi.');
+        }
+    }, []);
+
+    const loadDaily = useCallback(async () => {
+        try {
+            const d = await artworkService.getDaily();
+            setDaily(d);
+        } catch {
+            setDaily(null); // daily hata verirse feed çalışmaya devam etsin
+        }
+    }, []);
+
+    // Açılış
+    useEffect(() => {
+        let active = true;
+        (async () => {
+            setLoading(true);
+            await Promise.all([loadFirstPage(), loadDaily()]);
+            if (active) setLoading(false);
+        })();
+        return () => {
+            active = false;
+        };
+    }, [loadFirstPage, loadDaily]);
+
+    // Pull-to-refresh
+    const onRefresh = useCallback(async () => {
+        setRefreshing(true);
+        await Promise.all([loadFirstPage(), loadDaily()]);
+        setRefreshing(false);
+    }, [loadFirstPage, loadDaily]);
+
+    // Sonsuz kaydırma — çift-fetch guard'lı
+    const loadMore = useCallback(async () => {
+        if (loadingMore || !hasMore || loading) return;
+        setLoadingMore(true);
+        try {
+            const next = page + 1;
+            const res = await artworkService.list({ page: next, limit: PAGE_LIMIT });
+            setItems((prev) => [...prev, ...res.items]);
+            setPage(res.meta.page);
+            setHasMore(res.meta.page < res.meta.pages);
+        } catch {
+            // alt sayfa hatası sessiz — üstteki liste durur, retry pull ile
+        } finally {
+            setLoadingMore(false);
+        }
+    }, [loadingMore, hasMore, loading, page]);
+
+    const goToDetail = useCallback((slug: string) => {
+        router.push({ pathname: '/artwork/[slug]', params: { slug } });
+    }, []);
+
+    // --- İlk yükleme spinner ---
+    if (loading) {
+        return (
+            <View style={styles.centered}>
+                <ActivityIndicator size="large" color={colors.primary} />
+            </View>
+        );
+    }
+
+    // --- İlk yükleme hatası (feed boş + hata) ---
+    if (error && items.length === 0) {
+        return (
+            <View style={styles.centered}>
+                <Text style={styles.errorText}>{error}</Text>
+                <Pressable style={styles.retryBtn} onPress={onRefresh}>
+                    <Text style={styles.retryText}>Tekrar dene</Text>
+                </Pressable>
+            </View>
+        );
+    }
+
+    return (
+        <FlatList
+            data={items}
+            keyExtractor={(item) => item.id}
+            contentContainerStyle={styles.listContent}
+            ListHeaderComponent={daily ? <DailyCard daily={daily} onPress={goToDetail} /> : null}
+            renderItem={({ item }) => <ArtworkCard item={item} onPress={goToDetail} />}
+            onEndReached={loadMore}
+            onEndReachedThreshold={0.5}
+            refreshControl={
+                <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
+            }
+            ListFooterComponent={
+                loadingMore ? (
+                    <View style={styles.footer}>
+                        <ActivityIndicator color={colors.primary} />
+                    </View>
+                ) : null
+            }
+            ListEmptyComponent={
+                <View style={styles.centered}>
+                    <Text style={styles.emptyText}>Henüz eser yok.</Text>
+                </View>
+            }
+        />
+    );
+}
+
+// --- Günün eseri kartı (feed üstü) ---
+function DailyCard({ daily, onPress }: { daily: ArtworkDetail; onPress: (slug: string) => void }) {
+    return (
+        <View style={styles.dailyWrap}>
+            <Text style={styles.dailyLabel}>Günün Eseri</Text>
+            <Pressable style={styles.dailyCard} onPress={() => onPress(daily.slug)}>
+                <Image
+                    source={{ uri: daily.thumbUrl ?? daily.imageUrl }}
+                    style={styles.dailyImage}
+                    resizeMode="cover"
+                />
+                <View style={styles.dailyMeta}>
+                    <Text style={styles.dailyTitle} numberOfLines={1}>
+                        {daily.title ?? 'İsimsiz'}
+                    </Text>
+                    <Text style={styles.cardArtist} numberOfLines={1}>
+                        {daily.artist.name}
+                    </Text>
+                </View>
+            </Pressable>
+        </View>
+    );
+}
+
+// --- Feed kartı ---
+function ArtworkCard({ item, onPress }: { item: ArtworkListItem; onPress: (slug: string) => void }) {
+    return (
+        <Pressable style={styles.card} onPress={() => onPress(item.slug)}>
+            <Image
+                source={{ uri: item.thumbUrl ?? item.imageUrl }}
+                style={styles.cardImage}
+                resizeMode="cover"
+            />
+            <View style={styles.cardMeta}>
+                <Text style={styles.cardTitle} numberOfLines={1}>
+                    {item.title ?? 'İsimsiz'}
+                </Text>
+                <Text style={styles.cardArtist} numberOfLines={1}>
+                    {item.artist.name}
+                </Text>
+                <Text style={styles.cardType}>{TYPE_LABELS[item.type] ?? item.type}</Text>
+            </View>
+        </Pressable>
+    );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.background, gap: spacing.md },
-  title: { fontSize: 18, color: colors.text },
-  button: { paddingVertical: spacing.sm, paddingHorizontal: spacing.lg, backgroundColor: colors.primary, borderRadius: 8 },
-  buttonText: { color: '#fff', fontWeight: '600' },
+    centered: {
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: spacing.lg,
+        backgroundColor: colors.background,
+    },
+    listContent: {
+        padding: spacing.md,
+        backgroundColor: colors.background,
+        flexGrow: 1,
+    },
+    // Daily
+    dailyWrap: {
+        marginBottom: spacing.lg,
+    },
+    dailyLabel: {
+        color: colors.textMuted,
+        fontSize: 13,
+        fontWeight: '600',
+        textTransform: 'uppercase',
+        letterSpacing: 1,
+        marginBottom: spacing.sm,
+    },
+    dailyCard: {
+        backgroundColor: colors.surface,
+        borderRadius: 12,
+        overflow: 'hidden',
+        borderWidth: 1,
+        borderColor: colors.border,
+    },
+    dailyImage: {
+        width: '100%',
+        aspectRatio: 4 / 3,
+        backgroundColor: colors.surface,
+    },
+    dailyMeta: {
+        padding: spacing.md,
+    },
+    dailyTitle: {
+        color: colors.text,
+        fontSize: 18,
+        fontWeight: '700',
+        marginBottom: 2,
+    },
+    // Kart
+    card: {
+        backgroundColor: colors.surface,
+        borderRadius: 10,
+        overflow: 'hidden',
+        marginBottom: spacing.md,
+        borderWidth: 1,
+        borderColor: colors.border,
+    },
+    cardImage: {
+        width: '100%',
+        aspectRatio: 1,
+        backgroundColor: colors.surface,
+    },
+    cardMeta: {
+        padding: spacing.md,
+    },
+    cardTitle: {
+        color: colors.text,
+        fontSize: 16,
+        fontWeight: '600',
+        marginBottom: 2,
+    },
+    cardArtist: {
+        color: colors.textMuted,
+        fontSize: 14,
+    },
+    cardType: {
+        color: colors.primary,
+        fontSize: 12,
+        fontWeight: '600',
+        marginTop: spacing.sm,
+    },
+    // Durumlar
+    footer: {
+        paddingVertical: spacing.lg,
+    },
+    emptyText: {
+        color: colors.textMuted,
+        fontSize: 15,
+    },
+    errorText: {
+        color: colors.danger,
+        fontSize: 15,
+        marginBottom: spacing.md,
+    },
+    retryBtn: {
+        backgroundColor: colors.primary,
+        paddingHorizontal: spacing.lg,
+        paddingVertical: spacing.sm,
+        borderRadius: 8,
+    },
+    retryText: {
+        color: colors.background,
+        fontWeight: '600',
+    },
 });
