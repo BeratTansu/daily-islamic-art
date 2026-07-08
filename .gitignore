@@ -38,3 +38,11 @@ coverage/
 # Cursor (istersen kalsın — .cursorrules commit'lenir, aşağıda not var)
 
 dev_start
+
+# Drive import cache (rclone indirdiği ham veri — repo'ya girmez)
+.import-cache/
+
+*.xlsx
+# Ham import verisi
+daily islamic art.xlsx
+*.xlsx
