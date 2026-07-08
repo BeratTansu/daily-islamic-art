@@ -73,13 +73,18 @@ export default function ArtworkDetailScreen() {
 
         <View style={styles.body}>
           <Text style={styles.title}>{artwork.title ?? 'İsimsiz'}</Text>
-          <Text style={styles.artist}>{artwork.artist.name}</Text>
+          <Text style={styles.artist}>{artwork.contributors ?? artwork.artist.name}</Text>
           <Text style={styles.typeBadge}>{TYPE_LABELS[artwork.type] ?? artwork.type}</Text>
 
-          {/* Eserdeki metin + çeviri */}
-          {artwork.arabicText ? (
+          {/* Eserdeki metin — alanlardan biri bile doluysa göster (arabicText'e bağlı değil) */}
+          {artwork.arabicText || artwork.transcription || artwork.translation || artwork.sourceRef ? (
             <View style={styles.textBlock}>
-              <Text style={styles.arabic}>{artwork.arabicText}</Text>
+              {artwork.arabicText ? (
+                <Text style={styles.arabic}>{artwork.arabicText}</Text>
+              ) : null}
+              {artwork.transcription ? (
+                <Text style={styles.transcription}>{artwork.transcription}</Text>
+              ) : null}
               {artwork.translation ? (
                 <Text style={styles.translation}>{artwork.translation}</Text>
               ) : null}
@@ -228,5 +233,11 @@ const styles = StyleSheet.create({
   retryText: {
     color: colors.background,
     fontWeight: '600',
+  },
+  transcription: {
+    color: colors.text,
+    fontSize: 15,
+    lineHeight: 24,
+    marginBottom: spacing.sm,
   },
 });

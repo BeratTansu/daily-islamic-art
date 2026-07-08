@@ -17,6 +17,7 @@ import {
     ArtworkDetail,
 } from '../../lib/artworks/artworkService';
 import { colors, spacing } from '../../constants/theme';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const PAGE_LIMIT = 10;
 
@@ -39,6 +40,19 @@ export default function FeedScreen() {
     const [error, setError] = useState<string | null>(null);
 
     const [daily, setDaily] = useState<ArtworkDetail | null>(null);
+
+    // --- Çıkış Yap Fonksiyonu ---
+    const handleLogout = useCallback(async () => {
+        try {
+            // EĞER VARSA: token'ı silen authService fonksiyonunu buraya ekle.
+            // Örn: await authService.logout();
+
+            // Kullanıcıyı auth ekranına geri gönderiyoruz
+            router.replace('/login'); // Buradaki yolu kendi klasör yapına göre güncelleyebilirsin
+        } catch (e) {
+            console.error('Çıkış yapılırken hata oluştu:', e);
+        }
+    }, []);
 
     // --- Feed ilk sayfa / yenileme ---
     const loadFirstPage = useCallback(async () => {
@@ -124,31 +138,49 @@ export default function FeedScreen() {
         );
     }
 
+    // Header bileşenini dinamik olarak basıyoruz ki Çıkış butonu her durumda en üstte gözüksün
+    const renderHeader = () => (
+        <View>
+            {/* Üst Bar: Başlık ve Çıkış Butonu */}
+            <View style={styles.headerRow}>
+                <Text style={styles.dailyLabel}>Günün Eseri</Text>
+                <Pressable style={styles.logoutBtn} onPress={handleLogout}>
+                    <Text style={styles.logoutText}>Çıkış Yap</Text>
+                </Pressable>
+            </View>
+
+            {/* Günün Eseri Kartı */}
+            {daily && <DailyCard daily={daily} onPress={goToDetail} />}
+        </View>
+    );
+
     return (
-        <FlatList
-            data={items}
-            keyExtractor={(item) => item.id}
-            contentContainerStyle={styles.listContent}
-            ListHeaderComponent={daily ? <DailyCard daily={daily} onPress={goToDetail} /> : null}
-            renderItem={({ item }) => <ArtworkCard item={item} onPress={goToDetail} />}
-            onEndReached={loadMore}
-            onEndReachedThreshold={0.5}
-            refreshControl={
-                <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
-            }
-            ListFooterComponent={
-                loadingMore ? (
-                    <View style={styles.footer}>
-                        <ActivityIndicator color={colors.primary} />
+        <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
+            <FlatList
+                data={items}
+                keyExtractor={(item) => item.id}
+                contentContainerStyle={styles.listContent}
+                ListHeaderComponent={renderHeader}
+                renderItem={({ item }) => <ArtworkCard item={item} onPress={goToDetail} />}
+                onEndReached={loadMore}
+                onEndReachedThreshold={0.5}
+                refreshControl={
+                    <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
+                }
+                ListFooterComponent={
+                    loadingMore ? (
+                        <View style={styles.footer}>
+                            <ActivityIndicator color={colors.primary} />
+                        </View>
+                    ) : null
+                }
+                ListEmptyComponent={
+                    <View style={styles.centered}>
+                        <Text style={styles.emptyText}>Henüz eser yok.</Text>
                     </View>
-                ) : null
-            }
-            ListEmptyComponent={
-                <View style={styles.centered}>
-                    <Text style={styles.emptyText}>Henüz eser yok.</Text>
-                </View>
-            }
-        />
+                }
+            />
+        </SafeAreaView>
     );
 }
 
@@ -156,7 +188,6 @@ export default function FeedScreen() {
 function DailyCard({ daily, onPress }: { daily: ArtworkDetail; onPress: (slug: string) => void }) {
     return (
         <View style={styles.dailyWrap}>
-            <Text style={styles.dailyLabel}>Günün Eseri</Text>
             <Pressable style={styles.dailyCard} onPress={() => onPress(daily.slug)}>
                 <Image
                     source={{ uri: daily.thumbUrl ?? daily.imageUrl }}
@@ -211,6 +242,24 @@ const styles = StyleSheet.create({
         backgroundColor: colors.background,
         flexGrow: 1,
     },
+    // Header Row & Logout Button
+    headerRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: spacing.sm,
+    },
+    logoutBtn: {
+        backgroundColor: colors.danger || '#ef4444',
+        paddingHorizontal: spacing.sm,
+        paddingVertical: 4,
+        borderRadius: 6,
+    },
+    logoutText: {
+        color: '#fff',
+        fontSize: 12,
+        fontWeight: '600',
+    },
     // Daily
     dailyWrap: {
         marginBottom: spacing.lg,
@@ -221,7 +270,6 @@ const styles = StyleSheet.create({
         fontWeight: '600',
         textTransform: 'uppercase',
         letterSpacing: 1,
-        marginBottom: spacing.sm,
     },
     dailyCard: {
         backgroundColor: colors.surface,
@@ -286,7 +334,7 @@ const styles = StyleSheet.create({
         fontSize: 15,
     },
     errorText: {
-        color: colors.danger,
+        color: colors.danger || '#ef4444',
         fontSize: 15,
         marginBottom: spacing.md,
     },

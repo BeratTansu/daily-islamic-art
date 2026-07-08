@@ -29,6 +29,8 @@ export interface ArtworkDetail extends ArtworkListItem {
     colorPalette: unknown | null;
     isPublished: boolean;
     createdAt: string;
+    transcription: string | null;
+    contributors: string | null;
 }
 
 export interface ListMeta {

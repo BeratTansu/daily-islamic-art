@@ -68,9 +68,13 @@ model Artwork {
   description String?
 
   // Görseller
-  imageUrl     String
+  imageUrl     String?
   thumbUrl     String?
   colorPalette Json? // filtre + wallpaper arka planı
+
+  sourceId      String?  @unique
+  contributors  String?
+  transcription String?
 
   // Yayın
   isPublished Boolean   @default(true)
