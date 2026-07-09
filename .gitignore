@@ -52,3 +52,7 @@ daily islamic art.xlsx
 login.json
 body.json
 bad*.json
+
+# test curl body'leri
+*-login.json
+body.json
