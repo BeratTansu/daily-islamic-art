@@ -46,3 +46,9 @@ dev_start
 # Ham import verisi
 daily islamic art.xlsx
 *.xlsx
+
+# Test artifacts (PowerShell curl body dosyalari)
+*.json.tmp
+login.json
+body.json
+bad*.json

@@ -10,7 +10,11 @@
     "generate": "prisma generate",
     "migrate": "prisma migrate dev",
     "studio": "prisma studio",
-    "seed": "tsx prisma/seed.ts"
+    "seed": "tsx prisma/seed.ts",
+    "import:metadata": "tsx scripts/import-metadata.ts",
+    "publish:curated": "tsx scripts/publish-curated.ts",
+    "unpublish:seed": "tsx scripts/unpublish-seed.ts",
+    "unpublish:all": "tsx scripts/unpublish-all.ts"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0"
