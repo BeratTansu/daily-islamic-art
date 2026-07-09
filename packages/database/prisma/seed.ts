@@ -1,4 +1,5 @@
 import { PrismaClient, ArtworkType } from '../generated/client/index.js';
+import * as argon2 from 'argon2';
 
 const prisma = new PrismaClient();
 
@@ -210,6 +211,21 @@ function placeholderImage(slug: string): string {
 
 async function main() {
   console.log('🌱 Seed başlıyor...');
+
+  const passwordHash = await argon2.hash('User123!');
+
+  await prisma.user.upsert({
+    where: { email: 'user@dia.app' },
+    update: {passwordHash},
+    create: {
+      email: 'user@dia.app',
+      passwordHash,
+      displayName: 'Test Kullanıcı',
+      role: 'USER',
+    },
+  });
+
+  console.log('✓ Test user: user@dia.app');
 
   // 1) Sanatçıları upsert et, slug → id map'i oluştur.
   const artistIdBySlug = new Map<string, string>();

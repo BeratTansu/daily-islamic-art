@@ -12,7 +12,10 @@ import { QueryAdminArtworkDto } from './dto/query-admin-artwork.dto';
 type ArtworkWithArtist = Artwork & { artist: Artist };
 
 // findAll artist'in sadece 3 alanını seçiyor → tip de onu yansıtsın
-type FeedArtwork = Artwork & { artist: Pick<Artist, 'id' | 'name' | 'slug'> };
+type FeedArtwork = Artwork & {
+    artist: Pick<Artist, 'id' | 'name' | 'slug'>;
+    isLiked?: boolean;
+};
 
 type FeedResult = {
     items: FeedArtwork[];
@@ -57,7 +60,32 @@ export class ArtworkService {
         }
     }
 
-    async findAll(query: QueryArtworkDto) {
+    /**
+     * Feed sonucuna kullanıcıya özel `isLiked` bilgisini ekler.
+     * Cache'e DOKUNMAZ — cache ortak, isLiked kişisel.
+     * Tek indexli sorgu (@@unique([userId, artworkId])), N+1 yok.
+     */
+    private async withLikeStatus(
+        result: FeedResult,
+        userId: string,
+    ): Promise<FeedResult> {
+        const ids = result.items.map((a) => a.id);
+        if (ids.length === 0) return result;
+
+        const likes = await this.prisma.like.findMany({
+            where: { userId, artworkId: { in: ids } },
+            select: { artworkId: true },
+        });
+
+        const likedIds = new Set(likes.map((l) => l.artworkId));
+
+        return {
+            ...result,
+            items: result.items.map((a) => ({ ...a, isLiked: likedIds.has(a.id) })),
+        };
+    }
+
+    async findAll(query: QueryArtworkDto, userId: string): Promise<FeedResult> {
         const { page = 1, limit = 20, type, script, artistId, q } = query;
 
         const cacheable = !q;
@@ -67,7 +95,7 @@ export class ArtworkService {
             const cached = await this.redis.get<FeedResult>(cacheKey);
             if (cached) {
                 this.logger.log(`feed cache HIT: ${cacheKey}`);
-                return cached;
+                return this.withLikeStatus(cached, userId);
             }
             this.logger.log(`feed cache MISS: ${cacheKey}`);
         }
@@ -103,7 +131,27 @@ export class ArtworkService {
             await this.redis.set(cacheKey, result, 300);
         }
 
-        return result;
+        return this.withLikeStatus(result, userId);
+    }
+
+    async like(artworkId: string, userId: string): Promise<void> {
+        try {
+            await this.prisma.like.createMany({
+                data: { userId, artworkId },
+                skipDuplicates: true,
+            });
+        } catch (e) {
+            if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2003') {
+                throw new NotFoundException('Eser bulunamadı');
+            }
+            throw e;
+        }
+    }
+
+    async unlike(artworkId: string, userId: string): Promise<void> {
+        await this.prisma.like.deleteMany({
+            where: { userId, artworkId },
+        });
     }
 
     async findAllAdmin(query: QueryAdminArtworkDto) {

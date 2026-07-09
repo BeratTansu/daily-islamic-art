@@ -1,7 +1,7 @@
 import {
     Controller, Get, Post, Patch, Delete,
     Body, Param, Query, UseGuards, HttpCode, HttpStatus,
-    UploadedFile, UseInterceptors,
+    UploadedFile, UseInterceptors, Req,
     ParseFilePipe, MaxFileSizeValidator, FileTypeValidator,
 } from '@nestjs/common';
 import { FeatureArtworkDto } from './dto/feature-artwork.dto';
@@ -17,6 +17,7 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { Role } from '@dia/database/generated/client/index.js';
 import { PublishArtworkDto } from './dto/publish-artwork.dto';
 import { QueryAdminArtworkDto } from './dto/query-admin-artwork.dto';
+import type { AuthenticatedRequest } from '../auth/types/authenticated-request';
 
 @Controller('artworks')
 export class ArtworkController {
@@ -27,8 +28,9 @@ export class ArtworkController {
 
     // ── Public okuma ──
     @Get()
-    findAll(@Query() query: QueryArtworkDto) {
-        return this.artworkService.findAll(query);
+    @UseGuards(JwtAuthGuard)
+    findAll(@Query() query: QueryArtworkDto, @Req() req: AuthenticatedRequest) {
+        return this.artworkService.findAll(query, req.user.id);
     }
 
     // ✅ DOĞRU SIRA: Statik rota (daily), dinamik rotadan (:slug) önce tanımlandı
@@ -49,6 +51,20 @@ export class ArtworkController {
     @Roles(Role.ADMIN)
     findOneBySlugAdmin(@Param('slug') slug: string) {
         return this.artworkService.findOneBySlugAdmin(slug);
+    }
+
+    @Post(':id/like')
+    @UseGuards(JwtAuthGuard)
+    @HttpCode(HttpStatus.NO_CONTENT)
+    like(@Param('id') id: string, @Req() req: AuthenticatedRequest) {
+        return this.artworkService.like(id, req.user.id);
+    }
+
+    @Delete(':id/like')
+    @UseGuards(JwtAuthGuard)
+    @HttpCode(HttpStatus.NO_CONTENT)
+    unlike(@Param('id') id: string, @Req() req: AuthenticatedRequest) {
+        return this.artworkService.unlike(id, req.user.id);
     }
 
     // ⚠️ DİNAMİK ROTA: Statiklerin altında

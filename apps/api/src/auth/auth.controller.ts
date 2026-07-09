@@ -3,6 +3,7 @@ import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import type { AuthenticatedRequest } from './types/authenticated-request';
 
 @Controller('auth')
 export class AuthController {
@@ -31,7 +32,7 @@ export class AuthController {
 
   @UseGuards(JwtAuthGuard)
   @Get('me')
-  me(@Req() req) {
-    return req.user; // JwtStrategy.validate'in döndürdüğü obje
+  me(@Req() req: AuthenticatedRequest) {
+    return req.user;
   }
 }
