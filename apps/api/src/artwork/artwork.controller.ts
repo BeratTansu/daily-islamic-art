@@ -15,6 +15,8 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { Role } from '@dia/database/generated/client/index.js';
+import { PublishArtworkDto } from './dto/publish-artwork.dto';
+import { QueryAdminArtworkDto } from './dto/query-admin-artwork.dto';
 
 @Controller('artworks')
 export class ArtworkController {
@@ -33,6 +35,20 @@ export class ArtworkController {
     @Get('daily')
     findDaily() {
         return this.artworkService.findDaily();
+    }
+
+    @Get('admin')
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Roles(Role.ADMIN)
+    findAllAdmin(@Query() query: QueryAdminArtworkDto) {
+        return this.artworkService.findAllAdmin(query);
+    }
+
+    @Get('admin/:slug')
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Roles(Role.ADMIN)
+    findOneBySlugAdmin(@Param('slug') slug: string) {
+        return this.artworkService.findOneBySlugAdmin(slug);
     }
 
     // ⚠️ DİNAMİK ROTA: Statiklerin altında
@@ -90,6 +106,16 @@ export class ArtworkController {
     @Roles(Role.ADMIN)
     setFeatured(@Param('id') id: string, @Body() dto: FeatureArtworkDto) {
         return this.artworkService.setFeatured(id, dto.featured);
+    }
+
+    @Patch(':id/publish')
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Roles(Role.ADMIN)
+    setPublished(
+        @Param('id') id: string,
+        @Body() dto: PublishArtworkDto,
+    ) {
+        return this.artworkService.setPublished(id, dto.published);
     }
 
     @Delete(':id')

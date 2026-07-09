@@ -80,6 +80,15 @@ export interface ListArtworksParams {
   artistId?: string;
 }
 
+// Admin listesi query tipi (public list'ten ayrı — isPublished/hasImage sadece burada)
+export interface AdminListParams {
+  page?: number;
+  limit?: number;
+  isPublished?: boolean;
+  hasImage?: boolean;
+  q?: string;
+}
+
 // upload dönüşü (POST /artworks/upload → { imageUrl })
 export interface UploadResult {
   imageUrl: string;
@@ -100,9 +109,24 @@ export const ArtworkService = {
     return ApiClient.get<ArtworkListResponse>(`/artworks${query ? `?${query}` : ''}`);
   },
 
+  listAdmin(params: AdminListParams = {}): Promise<ArtworkListResponse> {
+    const qs = new URLSearchParams();
+    if (params.page) qs.set('page', String(params.page));
+    if (params.limit) qs.set('limit', String(params.limit));
+    if (params.isPublished !== undefined) qs.set('isPublished', String(params.isPublished));
+    if (params.hasImage !== undefined) qs.set('hasImage', String(params.hasImage));
+    if (params.q) qs.set('q', params.q);
+    const query = qs.toString();
+    return ApiClient.get<ArtworkListResponse>(`/artworks/admin${query ? `?${query}` : ''}`);
+  },
+
   // Not: backend GET /artworks/:slug ile getiriyor (id değil slug).
   getBySlug(slug: string): Promise<Artwork> {
     return ApiClient.get<Artwork>(`/artworks/${slug}`);
+  },
+
+  getBySlugAdmin(slug: string): Promise<Artwork> {
+    return ApiClient.get<Artwork>(`/artworks/admin/${slug}`);
   },
 
   create(input: CreateArtworkInput): Promise<Artwork> {
@@ -119,6 +143,10 @@ export const ArtworkService = {
 
   setFeatured(id: string, featured: boolean): Promise<Artwork> {
     return ApiClient.patch<Artwork>(`/artworks/${id}/featured`, { featured });
+  },
+
+  setPublished(id: string, published: boolean): Promise<Artwork> {
+    return ApiClient.patch<Artwork>(`/artworks/${id}/publish`, { published });
   },
 
   // Artist'te olmayan tek metod: iki-adım upload akışının 1. adımı.

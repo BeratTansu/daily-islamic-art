@@ -7,6 +7,7 @@ import { CreateArtworkDto } from './dto/create-artwork.dto';
 import { UpdateArtworkDto } from './dto/update-artwork.dto';
 import { QueryArtworkDto } from './dto/query-artwork.dto';
 import { RedisService } from '../redis/redis.service';
+import { QueryAdminArtworkDto } from './dto/query-admin-artwork.dto';
 
 type ArtworkWithArtist = Artwork & { artist: Artist };
 
@@ -105,6 +106,40 @@ export class ArtworkService {
         return result;
     }
 
+    async findAllAdmin(query: QueryAdminArtworkDto) {
+        const { page = 1, limit = 20, type, script, artistId, q, isPublished, hasImage } = query;
+
+        const where: Prisma.ArtworkWhereInput = {
+            ...(isPublished !== undefined && { isPublished }),
+            ...(hasImage !== undefined && {
+                imageUrl: hasImage ? { not: null } : null,
+            }),
+            ...(type && { type }),
+            ...(script && { script }),
+            ...(artistId && { artistId }),
+            ...(q && {
+                OR: [
+                    { title: { contains: q, mode: 'insensitive' } },
+                    { arabicText: { contains: q, mode: 'insensitive' } },
+                    { translation: { contains: q, mode: 'insensitive' } },
+                ],
+            }),
+        };
+
+        const [items, total] = await this.prisma.$transaction([
+            this.prisma.artwork.findMany({
+                where,
+                include: { artist: { select: { id: true, name: true, slug: true } } },
+                orderBy: { createdAt: 'desc' },
+                skip: (page - 1) * limit,
+                take: limit,
+            }),
+            this.prisma.artwork.count({ where }),
+        ]);
+
+        return { items, meta: { page, limit, total, pages: Math.ceil(total / limit) } };
+    }
+
     // --- GÜN 5: Günün Eseri Mantığı ---
     async findDaily() {
         const cacheKey = `artworks:daily:${this.getTodayKey()}`;
@@ -171,6 +206,15 @@ export class ArtworkService {
     // ----------------------------------
 
     async findOneBySlug(slug: string) {
+        const artwork = await this.prisma.artwork.findFirst({
+            where: { slug, isPublished: true },
+            include: { artist: true },
+        });
+        if (!artwork) throw new NotFoundException('Eser bulunamadı');
+        return artwork;
+    }
+
+    async findOneBySlugAdmin(slug: string) {
         const artwork = await this.prisma.artwork.findUnique({
             where: { slug },
             include: { artist: true },
@@ -213,6 +257,23 @@ export class ArtworkService {
                 });
             }
             await this.invalidateArtworkCache(); // daily + feed bayatlamasın
+            return this.prisma.artwork.findUnique({
+                where: { id },
+                include: { artist: true },
+            });
+        } catch (e) {
+            this.handlePrismaError(e);
+        }
+    }
+
+    async setPublished(id: string, published: boolean) {
+        await this.ensureExists(id);
+        try {
+            await this.prisma.artwork.update({
+                where: { id },
+                data: { isPublished: published },
+            });
+            await this.invalidateArtworkCache(); // feed + daily bayatlamasın
             return this.prisma.artwork.findUnique({
                 where: { id },
                 include: { artist: true },

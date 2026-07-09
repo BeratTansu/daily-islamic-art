@@ -15,7 +15,7 @@ export default function EditArtworkPage() {
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
-        ArtworkService.getBySlug(slug)
+        ArtworkService.getBySlugAdmin(slug)
             .then(setArtwork)
             .catch((e) =>
                 setError(e instanceof ApiError ? e.message : 'Eser yüklenemedi.'),
