@@ -5,8 +5,6 @@ import path from 'node:path';
 
 const prisma = new PrismaClient();
 
-
-
 // Türkçe karakter map'li slugify (Hamid Aytaç → hamid-aytac)
 const TR: Record<string, string> = {
     ç: 'c', ğ: 'g', ı: 'i', ö: 'o', ş: 's', ü: 'u',
@@ -21,7 +19,7 @@ function slugify(input: string): string {
         .replace(/(^-+)|(-+$)/g, '');
 }
 
-// boş/whitespace → null (Samet'in "olmayanı boş bırak" kuralı)
+// boş/whitespace → null
 function clean(v: unknown): string | null {
     if (v === null || v === undefined) return null;
     const s = String(v).trim();
@@ -69,27 +67,29 @@ async function main() {
         const sourceId = clean(row.artwork_id);
         if (!sourceId) { skipped++; continue; }
 
-        const names = cleanNames(row.sanatci);              // ← "İmzasız" ayıklanmış liste
-        const artistId = await upsertArtist(names);         // ← artık ismleri geçiyoruz
+        const names = cleanNames(row.sanatci);
+        const artistId = await upsertArtist(names);
 
-        const metadata = {                                  // ← YENİ HALİ (eskisinin yerine)
+        // DÜZELTME BURADA: 'type' özelliğini metadata içinden çıkardık.
+        // Çünkü buradaki veriler update işleminde de kullanılacak ve türü ezmemesi lazım.
+        const metadata = {
             artistId,
             contributors: names.length > 0 ? names.join(', ') : null,
             transcription: clean(row.transkripsiyon),
             translation: clean(row.meaning),
             sourceRef: clean(row.surah),
-            type: 'DIGER' as const,
         };
 
         await prisma.artwork.upsert({
             where: { sourceId },
             create: {
                 sourceId,
-                slug: `${sourceId}`,   // ← senin düzenlediğin format neyse o kalsın
+                slug: `${sourceId}`,
                 isPublished: false,
+                type: 'DIGER' as const, // ← Sadece yeni eser oluşturulurken (ilk kayıtta) DIGER atanır
                 ...metadata,
             },
-            update: { ...metadata },
+            update: { ...metadata }, // ← type burada YOK. Böylece senin panelden yaptığın değişiklik korunur.
         });
 
         if ((i + 1) % 200 === 0) console.log(`İşlenen: ${i + 1}/${rows.length}`);
