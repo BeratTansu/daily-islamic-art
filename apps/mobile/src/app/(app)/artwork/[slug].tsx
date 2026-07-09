@@ -13,15 +13,6 @@ import { useLocalSearchParams, Stack } from 'expo-router';
 import { artworkService, ArtworkDetail } from '../../../lib/artworks/artworkService';
 import { colors, spacing } from '../../../constants/theme';
 
-const TYPE_LABELS: Record<string, string> = {
-  HAT: 'Hat',
-  TEZHIP: 'Tezhip',
-  MINYATUR: 'Minyatür',
-  EBRU: 'Ebru',
-  CINI: 'Çini',
-  DIGER: 'Diğer',
-};
-
 export default function ArtworkDetailScreen() {
   const { slug } = useLocalSearchParams<{ slug: string }>();
   const [artwork, setArtwork] = useState<ArtworkDetail | null>(null);
@@ -67,14 +58,12 @@ export default function ArtworkDetailScreen() {
 
   return (
     <>
-      <Stack.Screen options={{ title: artwork.title ?? 'Eser', headerShown: true }} />
+      <Stack.Screen options={{ title: artwork.contributors ?? artwork.artist.name, headerShown: true }} />
       <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
         <Image source={{ uri: artwork.imageUrl }} style={styles.image} resizeMode="contain" />
 
         <View style={styles.body}>
-          <Text style={styles.title}>{artwork.title ?? 'İsimsiz'}</Text>
-          <Text style={styles.artist}>{artwork.contributors ?? artwork.artist.name}</Text>
-          <Text style={styles.typeBadge}>{TYPE_LABELS[artwork.type] ?? artwork.type}</Text>
+          <Text style={styles.title}>{artwork.contributors ?? artwork.artist.name}</Text>
 
           {/* Eserdeki metin — alanlardan biri bile doluysa göster (arabicText'e bağlı değil) */}
           {artwork.arabicText || artwork.transcription || artwork.translation || artwork.sourceRef ? (
@@ -150,19 +139,6 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontSize: 24,
     fontWeight: '700',
-    marginBottom: spacing.xs,
-  },
-  artist: {
-    color: colors.textMuted,
-    fontSize: 16,
-    marginBottom: spacing.sm,
-  },
-  typeBadge: {
-    color: colors.primary,
-    fontSize: 13,
-    fontWeight: '600',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
     marginBottom: spacing.lg,
   },
   textBlock: {

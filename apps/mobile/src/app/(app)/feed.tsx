@@ -1,4 +1,3 @@
-// src/app/(app)/feed.tsx
 import { useCallback, useEffect, useState } from 'react';
 import {
     View,
@@ -20,15 +19,6 @@ import { colors, spacing } from '../../constants/theme';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 const PAGE_LIMIT = 10;
-
-const TYPE_LABELS: Record<string, string> = {
-    HAT: 'Hat',
-    TEZHIP: 'Tezhip',
-    MINYATUR: 'Minyatür',
-    EBRU: 'Ebru',
-    CINI: 'Çini',
-    DIGER: 'Diğer',
-};
 
 export default function FeedScreen() {
     const [items, setItems] = useState<ArtworkListItem[]>([]);
@@ -195,9 +185,6 @@ function DailyCard({ daily, onPress }: { daily: ArtworkDetail; onPress: (slug: s
                     resizeMode="cover"
                 />
                 <View style={styles.dailyMeta}>
-                    <Text style={styles.dailyTitle} numberOfLines={1}>
-                        {daily.title ?? 'İsimsiz'}
-                    </Text>
                     <Text style={styles.cardArtist} numberOfLines={1}>
                         {daily.artist.name}
                     </Text>
@@ -217,13 +204,9 @@ function ArtworkCard({ item, onPress }: { item: ArtworkListItem; onPress: (slug:
                 resizeMode="cover"
             />
             <View style={styles.cardMeta}>
-                <Text style={styles.cardTitle} numberOfLines={1}>
-                    {item.title ?? 'İsimsiz'}
-                </Text>
                 <Text style={styles.cardArtist} numberOfLines={1}>
                     {item.artist.name}
                 </Text>
-                <Text style={styles.cardType}>{TYPE_LABELS[item.type] ?? item.type}</Text>
             </View>
         </Pressable>
     );
@@ -286,12 +269,6 @@ const styles = StyleSheet.create({
     dailyMeta: {
         padding: spacing.md,
     },
-    dailyTitle: {
-        color: colors.text,
-        fontSize: 18,
-        fontWeight: '700',
-        marginBottom: 2,
-    },
     // Kart
     card: {
         backgroundColor: colors.surface,
@@ -309,21 +286,10 @@ const styles = StyleSheet.create({
     cardMeta: {
         padding: spacing.md,
     },
-    cardTitle: {
-        color: colors.text,
+    cardArtist: {
         fontSize: 16,
         fontWeight: '600',
-        marginBottom: 2,
-    },
-    cardArtist: {
-        color: colors.textMuted,
-        fontSize: 14,
-    },
-    cardType: {
-        color: colors.primary,
-        fontSize: 12,
-        fontWeight: '600',
-        marginTop: spacing.sm,
+        color: colors.text,
     },
     // Durumlar
     footer: {
