@@ -25,7 +25,7 @@ export class ApiError extends Error {
 let refreshPromise: Promise<boolean> | null = null;
 
 async function doRefresh(): Promise<boolean> {
-  const refreshToken = await AuthStorage.getRefreshToken(); // await eklendi
+  const refreshToken = await AuthStorage.getRefreshToken();
   if (!refreshToken) return false;
 
   try {
@@ -36,15 +36,15 @@ async function doRefresh(): Promise<boolean> {
     });
 
     if (!res.ok) {
-      await AuthStorage.clear(); // await eklendi
+      await AuthStorage.clear();
       return false;
     }
 
     const data = (await res.json()) as AuthResponse;
-    await AuthStorage.setTokens(data.accessToken, data.refreshToken); // await eklendi
+    await AuthStorage.setTokens(data.accessToken, data.refreshToken);
     return true;
   } catch {
-    await AuthStorage.clear(); // await eklendi
+    await AuthStorage.clear();
     return false;
   }
 }
@@ -58,34 +58,50 @@ function refreshOnce(): Promise<boolean> {
   return refreshPromise;
 }
 
-export interface RequestOptions extends RequestInit {
+// RequestInit'in `body`'si BodyInit. Biz ham veriyi kabul edip serialization'ı
+// request() içinde tek noktada yapıyoruz → `body`'yi override ediyoruz.
+export interface RequestOptions extends Omit<RequestInit, 'body'> {
   auth?: boolean;
+  body?: unknown;
 }
 
 async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
-  const { auth = true, headers, ...rest } = options;
+  const { auth = true, headers, body, ...rest } = options;
 
-  // async oldu — içinde await AuthStorage.getAccessToken() var.
+  // Serialization tek nokta. `undefined` = gövde yok. `false`/`0`/`''` geçerli gövdedir.
+  const isFormData = body instanceof FormData;
+  const hasBody = body !== undefined;
+  const serializedBody: BodyInit | undefined = !hasBody
+    ? undefined
+    : isFormData
+      ? (body as FormData)
+      : JSON.stringify(body);
+
+  // async — içinde await AuthStorage.getAccessToken() var.
   const buildHeaders = async (): Promise<HeadersInit> => {
     const h: Record<string, string> = {
       ...(headers as Record<string, string>),
     };
-    if (!(rest.body instanceof FormData)) {
+    // FormData'da Content-Type'a dokunma (boundary).
+    // Gövde yoksa hiç set etme.
+    if (hasBody && !isFormData) {
       h['Content-Type'] = 'application/json';
     }
     if (auth) {
-      const token = await AuthStorage.getAccessToken(); // await eklendi
+      const token = await AuthStorage.getAccessToken();
       if (token) h['Authorization'] = `Bearer ${token}`;
     }
     return h;
   };
 
-  let res = await fetch(`${BASE_URL}${path}`, { ...rest, headers: await buildHeaders() });
+  const init: RequestInit = { ...rest, body: serializedBody };
+
+  let res = await fetch(`${BASE_URL}${path}`, { ...init, headers: await buildHeaders() });
 
   if (res.status === 401 && auth) {
     const refreshed = await refreshOnce();
     if (refreshed) {
-      res = await fetch(`${BASE_URL}${path}`, { ...rest, headers: await buildHeaders() });
+      res = await fetch(`${BASE_URL}${path}`, { ...init, headers: await buildHeaders() });
     }
   }
 
@@ -108,9 +124,9 @@ export const ApiClient = {
   get: <T>(path: string, options?: RequestOptions) =>
     request<T>(path, { ...options, method: 'GET' }),
   post: <T>(path: string, body?: unknown, options?: RequestOptions) =>
-    request<T>(path, { ...options, method: 'POST', body: body ? JSON.stringify(body) : undefined }),
+    request<T>(path, { ...options, method: 'POST', body }),
   patch: <T>(path: string, body?: unknown, options?: RequestOptions) =>
-    request<T>(path, { ...options, method: 'PATCH', body: body ? JSON.stringify(body) : undefined }),
+    request<T>(path, { ...options, method: 'PATCH', body }),
   delete: <T>(path: string, options?: RequestOptions) =>
     request<T>(path, { ...options, method: 'DELETE' }),
   upload: <T>(path: string, formData: FormData, options?: RequestOptions) =>

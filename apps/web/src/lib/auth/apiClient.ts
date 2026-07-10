@@ -63,20 +63,30 @@ function refreshOnce(): Promise<boolean> {
   return refreshPromise;
 }
 
-export interface RequestOptions extends RequestInit {
+export interface RequestOptions extends Omit<RequestInit, 'body'> {
   auth?: boolean; // true (default): 401'de refresh dene. false: deneme (login için).
+  body?: unknown;
 }
 
 async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
-  const { auth = true, headers, ...rest } = options;
+  const { auth = true, headers, body, ...rest } = options;
+
+  // Serialization tek nokta. `undefined` = gövde yok. `false`/`0`/`''` geçerli gövdedir.
+  const isFormData = body instanceof FormData;
+  const hasBody = body !== undefined;
+  const serializedBody: BodyInit | undefined = !hasBody
+    ? undefined
+    : isFormData
+      ? (body as FormData)
+      : JSON.stringify(body);
 
   const buildHeaders = (): HeadersInit => {
     const h: Record<string, string> = {
       ...(headers as Record<string, string>),
     };
     // FormData ise Content-Type'a dokunma — tarayıcı boundary'yi kendi basar.
-    // Sadece JSON body'de application/json set et.
-    if (!(rest.body instanceof FormData)) {
+    // Gövde yoksa hiç set etme — GET/DELETE'e application/json basmak yalan.
+    if (hasBody && !isFormData) {
       h['Content-Type'] = 'application/json';
     }
     if (auth) {
@@ -86,12 +96,14 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
     return h;
   };
 
-  let res = await fetch(`${BASE_URL}${path}`, { ...rest, headers: buildHeaders() });
+  const init: RequestInit = { ...rest, body: serializedBody };
+
+  let res = await fetch(`${BASE_URL}${path}`, { ...init, headers: buildHeaders() });
 
   if (res.status === 401 && auth) {
     const refreshed = await refreshOnce();
     if (refreshed) {
-      res = await fetch(`${BASE_URL}${path}`, { ...rest, headers: buildHeaders() });
+      res = await fetch(`${BASE_URL}${path}`, { ...init, headers: buildHeaders() });
     }
   }
 
@@ -114,12 +126,12 @@ export const ApiClient = {
   get: <T>(path: string, options?: RequestOptions) =>
     request<T>(path, { ...options, method: 'GET' }),
   post: <T>(path: string, body?: unknown, options?: RequestOptions) =>
-    request<T>(path, { ...options, method: 'POST', body: body ? JSON.stringify(body) : undefined }),
+    request<T>(path, { ...options, method: 'POST', body }),
   patch: <T>(path: string, body?: unknown, options?: RequestOptions) =>
-    request<T>(path, { ...options, method: 'PATCH', body: body ? JSON.stringify(body) : undefined }),
+    request<T>(path, { ...options, method: 'PATCH', body }),
   delete: <T>(path: string, options?: RequestOptions) =>
     request<T>(path, { ...options, method: 'DELETE' }),
-  // Multipart: body doğrudan FormData, stringify YOK.
+  // Multipart: request() FormData'yı tanır, stringify etmez, Content-Type set etmez.
   upload: <T>(path: string, formData: FormData, options?: RequestOptions) =>
     request<T>(path, { ...options, method: 'POST', body: formData }),
 };
