@@ -47,12 +47,7 @@ dev_start
 daily islamic art.xlsx
 *.xlsx
 
-# Test artifacts (PowerShell curl body dosyalari)
-*.json.tmp
-login.json
-body.json
-bad*.json
-
-# test curl body'leri
-*-login.json
-body.json
+# Test curl body dosyalari (kok dizin)
+/*.json
+!/package.json
+!/tsconfig.json
