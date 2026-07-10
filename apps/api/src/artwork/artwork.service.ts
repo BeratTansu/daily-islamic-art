@@ -8,6 +8,7 @@ import { UpdateArtworkDto } from './dto/update-artwork.dto';
 import { QueryArtworkDto } from './dto/query-artwork.dto';
 import { RedisService } from '../redis/redis.service';
 import { QueryAdminArtworkDto } from './dto/query-admin-artwork.dto';
+import { QueryLikedDto } from './dto/query-liked.dto';
 
 type ArtworkWithArtist = Artwork & { artist: Artist };
 
@@ -253,6 +254,33 @@ export class ArtworkService {
     }
     // ----------------------------------
 
+    async findLiked(userId: string, query: QueryLikedDto) {
+        const page = query.page ?? 1;
+        const limit = query.limit ?? 20;
+        const skip = (page - 1) * limit;
+
+        const where = {
+            userId,
+            artwork: { isPublished: true },
+        };
+
+        const [likes, total] = await this.prisma.$transaction([
+            this.prisma.like.findMany({
+                where,
+                include: { artwork: { include: { artist: true } } },
+                orderBy: { createdAt: 'desc' }, // Like.createdAt = beğeni tarihi
+                skip,
+                take: limit,
+            }),
+            this.prisma.like.count({ where }),
+        ]);
+
+        return {
+            items: likes.map((l) => ({ ...l.artwork, isLiked: true })),
+            meta: { page, limit, total, pages: Math.ceil(total / limit) },
+        };
+    }   
+
     async findOneBySlug(slug: string, userId: string) {
         const artwork = await this.prisma.artwork.findFirst({
             where: { slug, isPublished: true },
@@ -267,7 +295,7 @@ export class ArtworkService {
         });
 
         return { ...artwork, isLiked: !!like };
-    }       
+    }
 
     async findOneBySlugAdmin(slug: string) {
         const artwork = await this.prisma.artwork.findUnique({

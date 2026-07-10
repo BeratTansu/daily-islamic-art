@@ -1,7 +1,6 @@
 import { IsBoolean, IsOptional, IsString, IsEnum, IsInt, Min, Max } from 'class-validator';
-import { Type } from 'class-transformer';
+import { Type, Transform } from 'class-transformer';
 import { ArtworkType } from '@dia/database/generated/client/index.js';
-import { Transform } from 'class-transformer';
 
 // Feed/filtre için. Query param'lar string gelir → @Type ile number'a çevir.
 export class QueryArtworkDto {

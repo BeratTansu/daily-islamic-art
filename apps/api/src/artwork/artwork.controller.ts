@@ -18,6 +18,7 @@ import { Role } from '@dia/database/generated/client/index.js';
 import { PublishArtworkDto } from './dto/publish-artwork.dto';
 import { QueryAdminArtworkDto } from './dto/query-admin-artwork.dto';
 import type { AuthenticatedRequest } from '../auth/types/authenticated-request';
+import { QueryLikedDto } from './dto/query-liked.dto';
 
 @Controller('artworks')
 export class ArtworkController {
@@ -68,6 +69,15 @@ export class ArtworkController {
     }
 
     // ⚠️ DİNAMİK ROTA: Statiklerin altında
+    @Get('liked')
+    @UseGuards(JwtAuthGuard)
+    findLiked(
+        @Query() query: QueryLikedDto,
+        @Req() req: AuthenticatedRequest,
+    ) {
+        return this.artworkService.findLiked(req.user.id, query);
+    }
+
     @Get(':slug')
     @UseGuards(JwtAuthGuard)
     findOneBySlug(
