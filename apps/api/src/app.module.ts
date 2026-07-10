@@ -6,6 +6,7 @@ import { AuthModule } from './auth/auth.module';
 import { ConfigModule } from '@nestjs/config';
 import { ArtworkModule } from './artwork/artwork.module';
 import { ArtistModule } from './artist/artist.module';
+import { CollectionModule } from './collection/collection.module';
 import { RedisModule } from './redis/redis.module';
 import { StorageModule } from './storage/storage.module';
 import { HealthModule } from './health/health.module';
@@ -16,6 +17,7 @@ import { HealthModule } from './health/health.module';
     AuthModule,
     ArtworkModule,
     ArtistModule,
+    CollectionModule,
     RedisModule,
     StorageModule,
     HealthModule],
