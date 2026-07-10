@@ -12,6 +12,7 @@ export const colors = {
   primary: '#1B6B5C',   // geçici — DIA ana rengi, İslam sanatına uygun bir ton seç
   border: '#E5E7EB',
   danger: '#DC2626',
+  like: '#DC2626',   // beğenili kalp
 } as const;
 
 export const spacing = {

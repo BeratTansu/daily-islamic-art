@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
     View,
     Text,
@@ -9,12 +9,16 @@ import {
     RefreshControl,
     StyleSheet,
 } from 'react-native';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import { runOnJS } from 'react-native-reanimated';
 import { router } from 'expo-router';
 import {
     artworkService,
     ArtworkListItem,
     ArtworkDetail,
 } from '../../lib/artworks/artworkService';
+import { useLike } from '../../lib/artworks/useLike';
+import { LikeButton } from '../../components/LikeButton';
 import { colors, spacing } from '../../constants/theme';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -30,19 +34,6 @@ export default function FeedScreen() {
     const [error, setError] = useState<string | null>(null);
 
     const [daily, setDaily] = useState<ArtworkDetail | null>(null);
-
-    // --- Çıkış Yap Fonksiyonu ---
-    const handleLogout = useCallback(async () => {
-        try {
-            // EĞER VARSA: token'ı silen authService fonksiyonunu buraya ekle.
-            // Örn: await authService.logout();
-
-            // Kullanıcıyı auth ekranına geri gönderiyoruz
-            router.replace('/login'); // Buradaki yolu kendi klasör yapına göre güncelleyebilirsin
-        } catch (e) {
-            console.error('Çıkış yapılırken hata oluştu:', e);
-        }
-    }, []);
 
     // --- Feed ilk sayfa / yenileme ---
     const loadFirstPage = useCallback(async () => {
@@ -107,6 +98,29 @@ export default function FeedScreen() {
         router.push({ pathname: '/artwork/[slug]', params: { slug } });
     }, []);
 
+    // Optimistic state güncelleyici. Aynı eser hem listede hem daily kartında
+    // olabilir → ikisini de günceller, yoksa iki kalp ayrışır.
+    const applyLocal = useCallback((id: string, isLiked: boolean) => {
+        setItems((prev) => prev.map((a) => (a.id === id ? { ...a, isLiked } : a)));
+        setDaily((prev) => (prev && prev.id === id ? { ...prev, isLiked } : prev));
+    }, []);
+
+    const { toggle, likeOnly } = useLike(applyLocal);
+
+    // Hook'lar erken return'lerin ÜSTÜNDE olmalı (Rules of Hooks).
+    // Aşağıdaki `if (loading) return` bu useCallback'i atlarsa hook sırası bozulur.
+    const renderItem = useCallback(
+        ({ item }: { item: ArtworkListItem }) => (
+            <ArtworkCard
+                item={item}
+                onPress={goToDetail}
+                onToggleLike={toggle}
+                onDoubleTapLike={likeOnly}
+            />
+        ),
+        [goToDetail, toggle, likeOnly],
+    );
+
     // --- İlk yükleme spinner ---
     if (loading) {
         return (
@@ -128,19 +142,19 @@ export default function FeedScreen() {
         );
     }
 
-    // Header bileşenini dinamik olarak basıyoruz ki Çıkış butonu her durumda en üstte gözüksün
+
+
     const renderHeader = () => (
         <View>
-            {/* Üst Bar: Başlık ve Çıkış Butonu */}
-            <View style={styles.headerRow}>
-                <Text style={styles.dailyLabel}>Günün Eseri</Text>
-                <Pressable style={styles.logoutBtn} onPress={handleLogout}>
-                    <Text style={styles.logoutText}>Çıkış Yap</Text>
-                </Pressable>
-            </View>
-
-            {/* Günün Eseri Kartı */}
-            {daily && <DailyCard daily={daily} onPress={goToDetail} />}
+            <Text style={styles.dailyLabel}>Günün Eseri</Text>
+            {daily && (
+                <DailyCard
+                    daily={daily}
+                    onPress={goToDetail}
+                    onToggleLike={toggle}
+                    onDoubleTapLike={likeOnly}
+                />
+            )}
         </View>
     );
 
@@ -151,7 +165,7 @@ export default function FeedScreen() {
                 keyExtractor={(item) => item.id}
                 contentContainerStyle={styles.listContent}
                 ListHeaderComponent={renderHeader}
-                renderItem={({ item }) => <ArtworkCard item={item} onPress={goToDetail} />}
+                renderItem={renderItem}
                 onEndReached={loadMore}
                 onEndReachedThreshold={0.5}
                 refreshControl={
@@ -174,41 +188,114 @@ export default function FeedScreen() {
     );
 }
 
+// Görsel jesti: çift dokunma → beğen (asla kaldırmaz), tek dokunma → detay.
+// Exclusive: önce doubleTap denenir, ~200ms içinde ikinci dokunuş gelmezse singleTap.
+// Bedeli: tek dokunuşta ~200ms navigasyon gecikmesi. Gün 17'de hissiyat değerlendirilecek.
+//
+// runOnJS ŞART: jest callback'leri UI thread'de (worklet) çalışır,
+// React state'ine oradan dokunulamaz.
+function useImageGesture(
+    id: string,
+    slug: string,
+    isLiked: boolean,
+    onPress: (slug: string) => void,
+    onDoubleTapLike: (id: string, isLiked: boolean) => void,
+) {
+    return useMemo(() => {
+        const doubleTap = Gesture.Tap()
+            .numberOfTaps(2)
+            // Varsayılan 500ms → iki dokunuş arası bu kadar beklenir, tek dokunuş
+            // o kadar gecikir. 250ms: Instagram'ın hissiyatına yakın.
+            // Bedeli: yavaş çift dokunuş "çift" sayılmaz, detay açılır.
+            .maxDelay(180)
+            .onEnd(() => {
+                runOnJS(onDoubleTapLike)(id, isLiked);
+            });
+
+        const singleTap = Gesture.Tap().onEnd(() => {
+            runOnJS(onPress)(slug);
+        });
+
+        return Gesture.Exclusive(doubleTap, singleTap);
+    }, [id, slug, isLiked, onPress, onDoubleTapLike]);
+}
+
 // --- Günün eseri kartı (feed üstü) ---
-function DailyCard({ daily, onPress }: { daily: ArtworkDetail; onPress: (slug: string) => void }) {
+function DailyCard({
+    daily,
+    onPress,
+    onToggleLike,
+    onDoubleTapLike,
+}: {
+    daily: ArtworkDetail;
+    onPress: (slug: string) => void;
+    onToggleLike: (id: string, isLiked: boolean) => void;
+    onDoubleTapLike: (id: string, isLiked: boolean) => void;
+}) {
+    const gesture = useImageGesture(daily.id, daily.slug, daily.isLiked, onPress, onDoubleTapLike);
+
     return (
         <View style={styles.dailyWrap}>
-            <Pressable style={styles.dailyCard} onPress={() => onPress(daily.slug)}>
-                <Image
-                    source={{ uri: daily.thumbUrl ?? daily.imageUrl }}
-                    style={styles.dailyImage}
-                    resizeMode="cover"
-                />
-                <View style={styles.dailyMeta}>
-                    <Text style={styles.cardArtist} numberOfLines={1}>
-                        {daily.artist.name}
-                    </Text>
+            <View style={styles.dailyCard}>
+                <GestureDetector gesture={gesture}>
+                    <Image
+                        source={{ uri: daily.thumbUrl ?? daily.imageUrl }}
+                        style={styles.dailyImage}
+                        resizeMode="cover"
+                    />
+                </GestureDetector>
+
+                {/* Meta satırı jest DIŞINDA: gecikmesiz detay + kalp butonu.
+                    Kalp GestureDetector içinde olsaydı jest onu yutardı. */}
+                <View style={styles.metaRow}>
+                    <Pressable style={styles.metaText} onPress={() => onPress(daily.slug)}>
+                        <Text style={styles.cardArtist} numberOfLines={1}>
+                            {daily.artist.name}
+                        </Text>
+                    </Pressable>
+                    <LikeButton isLiked={daily.isLiked} onPress={() => onToggleLike(daily.id, daily.isLiked)} />
                 </View>
-            </Pressable>
+            </View>
         </View>
     );
 }
 
 // --- Feed kartı ---
-function ArtworkCard({ item, onPress }: { item: ArtworkListItem; onPress: (slug: string) => void }) {
+function ArtworkCard({
+    item,
+    onPress,
+    onToggleLike,
+    onDoubleTapLike,
+}: {
+    item: ArtworkListItem;
+    onPress: (slug: string) => void;
+    onToggleLike: (id: string, isLiked: boolean) => void;
+    onDoubleTapLike: (id: string, isLiked: boolean) => void;
+}) {
+    // isLiked opsiyonel (feed cache'i içermez, backend enrich eder).
+    // Gelmemişse false varsay — beğenisiz göster, çift dokunma beğenir.
+    const isLiked = item.isLiked ?? false;
+    const gesture = useImageGesture(item.id, item.slug, isLiked, onPress, onDoubleTapLike);
+
     return (
-        <Pressable style={styles.card} onPress={() => onPress(item.slug)}>
-            <Image
-                source={{ uri: item.thumbUrl ?? item.imageUrl }}
-                style={styles.cardImage}
-                resizeMode="cover"
-            />
-            <View style={styles.cardMeta}>
-                <Text style={styles.cardArtist} numberOfLines={1}>
-                    {item.artist.name}
-                </Text>
+        <View style={styles.card}>
+            <GestureDetector gesture={gesture}>
+                <Image
+                    source={{ uri: item.thumbUrl ?? item.imageUrl }}
+                    style={styles.cardImage}
+                    resizeMode="cover"
+                />
+            </GestureDetector>
+
+            <View style={styles.metaRow}>
+                <Pressable style={styles.metaText} onPress={() => onPress(item.slug)}>
+                    <Text style={styles.cardArtist} numberOfLines={1}>
+                        {item.artist.name}
+                    </Text>
+                </Pressable>
+                <LikeButton isLiked={isLiked} onPress={() => onToggleLike(item.id, isLiked)} />
             </View>
-        </Pressable>
+        </View>
     );
 }
 
@@ -225,24 +312,6 @@ const styles = StyleSheet.create({
         backgroundColor: colors.background,
         flexGrow: 1,
     },
-    // Header Row & Logout Button
-    headerRow: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: spacing.sm,
-    },
-    logoutBtn: {
-        backgroundColor: colors.danger || '#ef4444',
-        paddingHorizontal: spacing.sm,
-        paddingVertical: 4,
-        borderRadius: 6,
-    },
-    logoutText: {
-        color: '#fff',
-        fontSize: 12,
-        fontWeight: '600',
-    },
     // Daily
     dailyWrap: {
         marginBottom: spacing.lg,
@@ -253,6 +322,7 @@ const styles = StyleSheet.create({
         fontWeight: '600',
         textTransform: 'uppercase',
         letterSpacing: 1,
+        marginBottom: spacing.sm,
     },
     dailyCard: {
         backgroundColor: colors.surface,
@@ -265,9 +335,6 @@ const styles = StyleSheet.create({
         width: '100%',
         aspectRatio: 4 / 3,
         backgroundColor: colors.surface,
-    },
-    dailyMeta: {
-        padding: spacing.md,
     },
     // Kart
     card: {
@@ -283,8 +350,17 @@ const styles = StyleSheet.create({
         aspectRatio: 1,
         backgroundColor: colors.surface,
     },
-    cardMeta: {
-        padding: spacing.md,
+    // İki kart da aynı meta satırını kullanıyor: sanatçı adı (esner) + kalp.
+    metaRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingHorizontal: spacing.md,
+        paddingVertical: spacing.sm,
+    },
+    metaText: {
+        flex: 1,
+        marginRight: spacing.sm,
     },
     cardArtist: {
         fontSize: 16,
@@ -300,7 +376,7 @@ const styles = StyleSheet.create({
         fontSize: 15,
     },
     errorText: {
-        color: colors.danger || '#ef4444',
+        color: colors.danger,
         fontSize: 15,
         marginBottom: spacing.md,
     },
