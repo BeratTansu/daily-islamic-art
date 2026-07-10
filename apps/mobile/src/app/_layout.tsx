@@ -1,6 +1,7 @@
 import { Stack } from 'expo-router';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { AuthProvider } from '../context/AuthContext';
+import { LikeProvider } from '../context/LikeContext';
 
 export default function RootLayout() {
   return (
@@ -8,7 +9,11 @@ export default function RootLayout() {
     // flex:1 şart — yoksa yükseklik 0, dokunma alanı yok.
     <GestureHandlerRootView style={{ flex: 1 }}>
       <AuthProvider>
-        <Stack screenOptions={{ headerShown: false }} />
+        {/* LikeProvider AuthProvider'ın içinde: beğeni oturuma bağlı,
+            logout olunca provider unmount olmasa da yeni login temiz feed getirir. */}
+        <LikeProvider>
+          <Stack screenOptions={{ headerShown: false }} />
+        </LikeProvider>
       </AuthProvider>
     </GestureHandlerRootView>
   );

@@ -1,28 +1,27 @@
 // src/lib/artworks/useLike.ts
 import { useCallback } from 'react';
 import { artworkService } from './artworkService';
+import { useLikeContext } from '../../context/LikeContext';
 
-// Optimistic beğeni. Hook state TUTMAZ — çağıran ekran tutar.
-// Gerekçe: aynı eser feed'de ve detayda görünebilir; state hook'ta olsaydı
-// her kullanımda ayrı kopya olurdu. Ekran, sahip olduğu veriyi günceller.
-//
-// applyLocal(id, isLiked): ekranın state'ini güncelleyen callback.
-//   Önce optimistic çağrılır, hata olursa eski değerle tekrar çağrılır.
-export function useLike(applyLocal: (id: string, isLiked: boolean) => void) {
-    // Toggle: kalp butonu için. Mevcut duruma göre POST/DELETE.
+// Optimistic beğeni. State LikeContext'te (ortak defter) yaşar —
+// feed ve detay aynı defteri okur, ayrışmazlar.
+export function useLike() {
+    const { setOverride } = useLikeContext();
+
+    // Toggle: kalp butonu. Mevcut duruma göre POST/DELETE.
     const toggle = useCallback(
         async (id: string, currentIsLiked: boolean) => {
             const next = !currentIsLiked;
-            applyLocal(id, next); // optimistic
+            setOverride(id, next); // optimistic
             try {
                 if (next) await artworkService.like(id);
                 else await artworkService.unlike(id);
             } catch (e) {
-                applyLocal(id, currentIsLiked); // geri al
+                setOverride(id, currentIsLiked); // geri al
                 console.warn('Beğeni kaydedilemedi:', e); // TODO: toast (gün sonu)
             }
         },
-        [applyLocal],
+        [setOverride],
     );
 
     // Çift dokunma: HER ZAMAN beğenir, asla kaldırmaz.
@@ -31,15 +30,15 @@ export function useLike(applyLocal: (id: string, isLiked: boolean) => void) {
     const likeOnly = useCallback(
         async (id: string, currentIsLiked: boolean) => {
             if (currentIsLiked) return; // zaten beğenili, istek bile atma
-            applyLocal(id, true);
+            setOverride(id, true);
             try {
                 await artworkService.like(id);
             } catch (e) {
-                applyLocal(id, false);
+                setOverride(id, false);
                 console.warn('Beğeni kaydedilemedi:', e); // TODO: toast (gün sonu)
             }
         },
-        [applyLocal],
+        [setOverride],
     );
 
     return { toggle, likeOnly };

@@ -11,6 +11,9 @@ import {
 } from 'react-native';
 import { useLocalSearchParams, Stack } from 'expo-router';
 import { artworkService, ArtworkDetail } from '../../../lib/artworks/artworkService';
+import { useLike } from '../../../lib/artworks/useLike';
+import { useLikeContext } from '../../../context/LikeContext';
+import { LikeButton } from '../../../components/LikeButton';
 import { colors, spacing } from '../../../constants/theme';
 
 export default function ArtworkDetailScreen() {
@@ -63,7 +66,10 @@ export default function ArtworkDetailScreen() {
         <Image source={{ uri: artwork.imageUrl }} style={styles.image} resizeMode="contain" />
 
         <View style={styles.body}>
-          <Text style={styles.title}>{artwork.contributors ?? artwork.artist.name}</Text>
+          <View style={styles.titleRow}>
+            <Text style={styles.title}>{artwork.contributors ?? artwork.artist.name}</Text>
+            <DetailLikeButton artwork={artwork} />
+          </View>
 
           {/* Eserdeki metin — alanlardan biri bile doluysa göster (arabicText'e bağlı değil) */}
           {artwork.arabicText || artwork.transcription || artwork.translation || artwork.sourceRef ? (
@@ -101,6 +107,17 @@ export default function ArtworkDetailScreen() {
   );
 }
 
+// Kalbi kendi okur: LikeContext defteri ?? backend'in isLiked'ı.
+// Ayrı component çünkü aynı `getIsLiked(...)` ifadesi hem çizimde
+// hem onPress'te lazım — tek yerde hesaplansın.
+function DetailLikeButton({ artwork }: { artwork: ArtworkDetail }) {
+  const { toggle } = useLike();
+  const { getIsLiked } = useLikeContext();
+  const isLiked = getIsLiked(artwork.id, artwork.isLiked);
+
+  return <LikeButton isLiked={isLiked} onPress={() => toggle(artwork.id, isLiked)} size={28} />;
+}
+
 // Etiketli satır — value null ise hiç render etme
 function MetaRow({ label, value }: { label: string; value: string | null }) {
   if (!value) return null;
@@ -135,11 +152,18 @@ const styles = StyleSheet.create({
   body: {
     padding: spacing.lg,
   },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    marginBottom: spacing.lg,
+  },
   title: {
     color: colors.text,
     fontSize: 24,
     fontWeight: '700',
-    marginBottom: spacing.lg,
+    flex: 1,
+    marginRight: spacing.md,
   },
   textBlock: {
     backgroundColor: colors.surface,

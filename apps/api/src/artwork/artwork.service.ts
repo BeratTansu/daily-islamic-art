@@ -86,6 +86,26 @@ export class ArtworkService {
         };
     }
 
+    // Tek kayıt için isLiked enrich'i. withLikeStatus (liste) kullanılmıyor:
+    // tek kayıt için gereksiz dizi kurar/açar, dönüş tipi liste tipi.
+    // Tekrarlanan şey mantık değil sorgu → invariant sayılmaz.
+    //
+    // userId yoksa (misafir) sorgu bile atılmaz.
+    private async withSingleLikeStatus<T extends { id: string }>(
+        artwork: T | null,
+        userId?: string,
+    ): Promise<(T & { isLiked: boolean }) | null> {
+        if (!artwork) return null;
+        if (!userId) return { ...artwork, isLiked: false };
+
+        const like = await this.prisma.like.findFirst({
+            where: { userId, artworkId: artwork.id },
+            select: { id: true },
+        });
+
+        return { ...artwork, isLiked: !!like };
+    }
+
     async findAll(query: QueryArtworkDto, userId: string): Promise<FeedResult> {
         const { page = 1, limit = 20, type, script, artistId, q } = query;
 
@@ -190,14 +210,16 @@ export class ArtworkService {
     }
 
     // --- GÜN 5: Günün Eseri Mantığı ---
-    async findDaily() {
+    async findDaily(userId?: string) {
         const cacheKey = `artworks:daily:${this.getTodayKey()}`;
 
         // 1. Önce cache'e bak
-        const cached = await this.redis.get<ArtworkWithArtist>(cacheKey); // Veya varsa özel Artwork tipin
+        const cached = await this.redis.get<ArtworkWithArtist>(cacheKey);
         if (cached) {
             this.logger.log(`daily cache HIT: ${cacheKey}`);
-            return cached;
+            // İki return var (cache HIT + DB) → ikisi de enrich'ten geçmeli.
+            // "İnvariant tek yerde yaşamaz" (Gün 13.5).
+            return this.withSingleLikeStatus(cached, userId);
         }
         this.logger.log(`daily cache MISS: ${cacheKey}`);
 
@@ -250,7 +272,7 @@ export class ArtworkService {
             await this.redis.set(cacheKey, artwork, this.secondsUntilEndOfDay());
         }
 
-        return artwork;
+        return this.withSingleLikeStatus(artwork, userId);
     }
     // ----------------------------------
 
@@ -279,7 +301,7 @@ export class ArtworkService {
             items: likes.map((l) => ({ ...l.artwork, isLiked: true })),
             meta: { page, limit, total, pages: Math.ceil(total / limit) },
         };
-    }   
+    }
 
     async findOneBySlug(slug: string, userId: string) {
         const artwork = await this.prisma.artwork.findFirst({

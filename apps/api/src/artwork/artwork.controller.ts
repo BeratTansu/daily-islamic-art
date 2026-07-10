@@ -17,8 +17,9 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { Role } from '@dia/database/generated/client/index.js';
 import { PublishArtworkDto } from './dto/publish-artwork.dto';
 import { QueryAdminArtworkDto } from './dto/query-admin-artwork.dto';
-import type { AuthenticatedRequest } from '../auth/types/authenticated-request';
+import type { AuthenticatedRequest, OptionalAuthRequest } from '../auth/types/authenticated-request'; 
 import { QueryLikedDto } from './dto/query-liked.dto';
+import { OptionalJwtAuthGuard } from '../auth/guards/optional-jwt-auth.guard';
 
 @Controller('artworks')
 export class ArtworkController {
@@ -35,9 +36,13 @@ export class ArtworkController {
     }
 
     // ✅ DOĞRU SIRA: Statik rota (daily), dinamik rotadan (:slug) önce tanımlandı
+    // OptionalJwtAuthGuard: misafir de görebilir (blurlu daily), ama login'liyse
+    // req.user dolar → isLiked doğru gelir. Guard'sız bırakılsaydı Passport hiç
+    // çalışmaz, token gönderilse bile req.user boş kalırdı.
     @Get('daily')
-    findDaily() {
-        return this.artworkService.findDaily();
+    @UseGuards(OptionalJwtAuthGuard)
+    findDaily(@Req() req: OptionalAuthRequest) {
+        return this.artworkService.findDaily(req.user?.id);
     }
 
     @Get('admin')

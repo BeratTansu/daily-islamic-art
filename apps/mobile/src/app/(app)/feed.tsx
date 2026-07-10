@@ -18,6 +18,7 @@ import {
     ArtworkDetail,
 } from '../../lib/artworks/artworkService';
 import { useLike } from '../../lib/artworks/useLike';
+import { useLikeContext } from '../../context/LikeContext';
 import { LikeButton } from '../../components/LikeButton';
 import { colors, spacing } from '../../constants/theme';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -57,6 +58,12 @@ export default function FeedScreen() {
         }
     }, []);
 
+    // Beğeni state'i LikeContext'te (ortak defter). Aynı eser hem listede
+    // hem daily kartında hem detayda olabilir — hepsi aynı defteri okur.
+    // onRefresh clearLikeOverrides'ı kullandığı için burada, onun ÜSTÜNDE tanımlı.
+    const { toggle, likeOnly } = useLike();
+    const { getIsLiked, clear: clearLikeOverrides } = useLikeContext();
+
     // Açılış
     useEffect(() => {
         let active = true;
@@ -71,11 +78,15 @@ export default function FeedScreen() {
     }, [loadFirstPage, loadDaily]);
 
     // Pull-to-refresh
+    // Pull-to-refresh
     const onRefresh = useCallback(async () => {
         setRefreshing(true);
         await Promise.all([loadFirstPage(), loadDaily()]);
+        // Taze veri geldi → override'lar gereksiz. Eski bir kayıt backend'in
+        // doğru cevabını ezmesin (örn. başka cihazdan beğeni kaldırıldıysa).
+        clearLikeOverrides();
         setRefreshing(false);
-    }, [loadFirstPage, loadDaily]);
+    }, [loadFirstPage, loadDaily, clearLikeOverrides]);
 
     // Sonsuz kaydırma — çift-fetch guard'lı
     const loadMore = useCallback(async () => {
@@ -98,27 +109,19 @@ export default function FeedScreen() {
         router.push({ pathname: '/artwork/[slug]', params: { slug } });
     }, []);
 
-    // Optimistic state güncelleyici. Aynı eser hem listede hem daily kartında
-    // olabilir → ikisini de günceller, yoksa iki kalp ayrışır.
-    const applyLocal = useCallback((id: string, isLiked: boolean) => {
-        setItems((prev) => prev.map((a) => (a.id === id ? { ...a, isLiked } : a)));
-        setDaily((prev) => (prev && prev.id === id ? { ...prev, isLiked } : prev));
-    }, []);
-
-    const { toggle, likeOnly } = useLike(applyLocal);
-
     // Hook'lar erken return'lerin ÜSTÜNDE olmalı (Rules of Hooks).
     // Aşağıdaki `if (loading) return` bu useCallback'i atlarsa hook sırası bozulur.
     const renderItem = useCallback(
         ({ item }: { item: ArtworkListItem }) => (
             <ArtworkCard
                 item={item}
+                isLiked={getIsLiked(item.id, item.isLiked)}
                 onPress={goToDetail}
                 onToggleLike={toggle}
                 onDoubleTapLike={likeOnly}
             />
         ),
-        [goToDetail, toggle, likeOnly],
+        [goToDetail, toggle, likeOnly, getIsLiked],
     );
 
     // --- İlk yükleme spinner ---
@@ -150,6 +153,7 @@ export default function FeedScreen() {
             {daily && (
                 <DailyCard
                     daily={daily}
+                    isLiked={getIsLiked(daily.id, daily.isLiked)}
                     onPress={goToDetail}
                     onToggleLike={toggle}
                     onDoubleTapLike={likeOnly}
@@ -223,16 +227,18 @@ function useImageGesture(
 // --- Günün eseri kartı (feed üstü) ---
 function DailyCard({
     daily,
+    isLiked,
     onPress,
     onToggleLike,
     onDoubleTapLike,
 }: {
     daily: ArtworkDetail;
+    isLiked: boolean;
     onPress: (slug: string) => void;
     onToggleLike: (id: string, isLiked: boolean) => void;
     onDoubleTapLike: (id: string, isLiked: boolean) => void;
 }) {
-    const gesture = useImageGesture(daily.id, daily.slug, daily.isLiked, onPress, onDoubleTapLike);
+    const gesture = useImageGesture(daily.id, daily.slug, isLiked, onPress, onDoubleTapLike);
 
     return (
         <View style={styles.dailyWrap}>
@@ -253,7 +259,7 @@ function DailyCard({
                             {daily.artist.name}
                         </Text>
                     </Pressable>
-                    <LikeButton isLiked={daily.isLiked} onPress={() => onToggleLike(daily.id, daily.isLiked)} />
+                    <LikeButton isLiked={isLiked} onPress={() => onToggleLike(daily.id, isLiked)} />
                 </View>
             </View>
         </View>
@@ -263,18 +269,18 @@ function DailyCard({
 // --- Feed kartı ---
 function ArtworkCard({
     item,
+    isLiked,
     onPress,
     onToggleLike,
     onDoubleTapLike,
 }: {
     item: ArtworkListItem;
+    isLiked: boolean;
     onPress: (slug: string) => void;
     onToggleLike: (id: string, isLiked: boolean) => void;
     onDoubleTapLike: (id: string, isLiked: boolean) => void;
 }) {
-    // isLiked opsiyonel (feed cache'i içermez, backend enrich eder).
-    // Gelmemişse false varsay — beğenisiz göster, çift dokunma beğenir.
-    const isLiked = item.isLiked ?? false;
+    // isLiked artık dışarıdan geliyor: LikeContext defteri ?? backend'in isLiked'ı.
     const gesture = useImageGesture(item.id, item.slug, isLiked, onPress, onDoubleTapLike);
 
     return (
