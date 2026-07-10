@@ -253,14 +253,21 @@ export class ArtworkService {
     }
     // ----------------------------------
 
-    async findOneBySlug(slug: string) {
+    async findOneBySlug(slug: string, userId: string) {
         const artwork = await this.prisma.artwork.findFirst({
             where: { slug, isPublished: true },
             include: { artist: true },
         });
+
         if (!artwork) throw new NotFoundException('Eser bulunamadı');
-        return artwork;
-    }
+
+        const like = await this.prisma.like.findFirst({
+            where: { userId, artworkId: artwork.id },
+            select: { id: true },
+        });
+
+        return { ...artwork, isLiked: !!like };
+    }       
 
     async findOneBySlugAdmin(slug: string) {
         const artwork = await this.prisma.artwork.findUnique({

@@ -69,8 +69,12 @@ export class ArtworkController {
 
     // ⚠️ DİNAMİK ROTA: Statiklerin altında
     @Get(':slug')
-    findOne(@Param('slug') slug: string) {
-        return this.artworkService.findOneBySlug(slug);
+    @UseGuards(JwtAuthGuard)
+    findOneBySlug(
+        @Param('slug') slug: string,
+        @Req() req: AuthenticatedRequest,
+    ) {
+        return this.artworkService.findOneBySlug(slug, req.user.id);
     }
 
     // ── Admin yazma ──

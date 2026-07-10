@@ -31,6 +31,7 @@ export interface ArtworkDetail extends ArtworkListItem {
     createdAt: string;
     transcription: string | null;
     contributors: string | null;
+    isLiked: boolean;
 }
 
 export interface ListMeta {
