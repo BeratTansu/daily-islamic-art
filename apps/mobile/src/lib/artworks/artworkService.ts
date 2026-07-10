@@ -13,6 +13,9 @@ export interface ArtworkListItem {
     thumbUrl: string | null;
     featuredAt: string | null;
     artist: { id: string; name: string; slug: string };
+    // Opsiyonel: feed cache'ine giren obje bu alanı içermez,
+    // backend cache'ten SONRA enrich eder (withLikeStatus).
+    isLiked?: boolean;
 }
 
 // Detay ekranı için tam alanlar
@@ -54,6 +57,14 @@ export interface ListParams {
     q?: string;
 }
 
+// GET /artworks/liked sadece page/limit kabul eder (QueryLikedDto).
+// type/q gönderilirse backend forbidNonWhitelisted ile 400 döner.
+// Bu yüzden ListParams yeniden kullanılmıyor — tip yalan söylemesin.
+export interface LikedParams {
+    page?: number;
+    limit?: number;
+}
+
 class ArtworkService {
     async list(params: ListParams = {}): Promise<ArtworkListResponse> {
         const qs = new URLSearchParams();
@@ -72,6 +83,28 @@ class ArtworkService {
 
     async getBySlug(slug: string): Promise<ArtworkDetail> {
         return ApiClient.get<ArtworkDetail>(`/artworks/${slug}`);
+    }
+
+    // ─── Beğeni ───
+    // POST/DELETE ayrı: toggle endpoint'i YOK. "Beğenili olsun" / "beğenisiz olsun".
+    // İkisi de idempotent, 204 döner → dönüş tipi void.
+
+    async like(id: string): Promise<void> {
+        await ApiClient.post<void>(`/artworks/${id}/like`);
+    }
+
+    async unlike(id: string): Promise<void> {
+        await ApiClient.delete<void>(`/artworks/${id}/like`);
+    }
+
+    // "Beğendiklerim". Sıralama = beğeni tarihi (Like.createdAt desc),
+    // eser oluşturma tarihi DEĞİL. Yayından kalkan eser listede görünmez.
+    async listLiked(params: LikedParams = {}): Promise<ArtworkListResponse> {
+        const qs = new URLSearchParams();
+        if (params.page) qs.set('page', String(params.page));
+        if (params.limit) qs.set('limit', String(params.limit));
+        const query = qs.toString();
+        return ApiClient.get<ArtworkListResponse>(`/artworks/liked${query ? `?${query}` : ''}`);
     }
 }
 
