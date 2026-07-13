@@ -2,6 +2,7 @@ import { Stack } from 'expo-router';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { AuthProvider } from '../context/AuthContext';
 import { LikeProvider } from '../context/LikeContext';
+import { ToastProvider } from '../context/ToastContext';
 
 export default function RootLayout() {
   return (
@@ -12,7 +13,11 @@ export default function RootLayout() {
         {/* LikeProvider AuthProvider'ın içinde: beğeni oturuma bağlı,
             logout olunca provider unmount olmasa da yeni login temiz feed getirir. */}
         <LikeProvider>
-          <Stack screenOptions={{ headerShown: false }} />
+          {/* ToastProvider en içte: diğerlerine bağımlı değil ama Stack'i
+              sarmalı ki banner tüm ekranların üstünde çizilsin. */}
+          <ToastProvider>
+            <Stack screenOptions={{ headerShown: false }} />
+          </ToastProvider>
         </LikeProvider>
       </AuthProvider>
     </GestureHandlerRootView>

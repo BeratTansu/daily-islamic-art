@@ -2,11 +2,13 @@
 import { useCallback } from 'react';
 import { artworkService } from './artworkService';
 import { useLikeContext } from '../../context/LikeContext';
+import { useToast } from '../../context/ToastContext';
 
 // Optimistic beğeni. State LikeContext'te (ortak defter) yaşar —
 // feed ve detay aynı defteri okur, ayrışmazlar.
 export function useLike() {
     const { setOverride } = useLikeContext();
+    const { showToast } = useToast();
 
     // Toggle: kalp butonu. Mevcut duruma göre POST/DELETE.
     const toggle = useCallback(
@@ -16,12 +18,12 @@ export function useLike() {
             try {
                 if (next) await artworkService.like(id);
                 else await artworkService.unlike(id);
-            } catch (e) {
+            } catch {
                 setOverride(id, currentIsLiked); // geri al
-                console.warn('Beğeni kaydedilemedi:', e); // TODO: toast (gün sonu)
+                showToast('Beğeni kaydedilemedi', 'error');
             }
         },
-        [setOverride],
+        [setOverride, showToast],
     );
 
     // Çift dokunma: HER ZAMAN beğenir, asla kaldırmaz.
@@ -33,12 +35,12 @@ export function useLike() {
             setOverride(id, true);
             try {
                 await artworkService.like(id);
-            } catch (e) {
+            } catch {
                 setOverride(id, false);
-                console.warn('Beğeni kaydedilemedi:', e); // TODO: toast (gün sonu)
+                showToast('Beğeni kaydedilemedi', 'error');
             }
         },
-        [setOverride],
+        [setOverride, showToast],
     );
 
     return { toggle, likeOnly };

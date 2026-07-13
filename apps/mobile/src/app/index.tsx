@@ -3,6 +3,7 @@ import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 import { colors } from '../constants/theme';
 
+
 export default function Index() {
   const { status } = useAuth();
 
@@ -14,7 +15,7 @@ export default function Index() {
     );
   }
 
-  return <Redirect href={status === 'authenticated' ? '/feed' : '/login'} />;
+  return <Redirect href={status === 'authenticated' ? '/feed' : '/welcome'} />;
 }
 
 const styles = StyleSheet.create({

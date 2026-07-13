@@ -8,6 +8,7 @@ type AuthStatus = 'loading' | 'authenticated' | 'unauthenticated';
 type AuthContextValue = {
   status: AuthStatus;
   signIn: (email: string, password: string) => Promise<void>;
+  register: (email: string, password: string, displayName: string) => Promise<void>;
   signOut: () => Promise<void>;
 };
 
@@ -44,13 +45,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setStatus('authenticated');
   }
 
+  async function register(email: string, password: string, displayName: string) {
+    // signIn ile aynı desen: register throw ederse status değişmez,
+    // hata register ekranına propagate olur.
+    await AuthService.register(email, password, displayName);
+    setStatus('authenticated');
+  }
+
   async function signOut() {
     await AuthService.logout(); // logout içinde her hâlükârda clear var
     setStatus('unauthenticated');
   }
 
   return (
-    <AuthContext.Provider value={{ status, signIn, signOut }}>
+    <AuthContext.Provider value={{ status, signIn, register, signOut }}>
       {children}
     </AuthContext.Provider>
   );
