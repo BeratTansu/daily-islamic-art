@@ -16,11 +16,11 @@ import {
     artworkService,
     ArtworkListItem,
     ArtworkDetail,
-} from '../../lib/artworks/artworkService';
-import { useLike } from '../../lib/artworks/useLike';
-import { useLikeContext } from '../../context/LikeContext';
-import { LikeButton } from '../../components/LikeButton';
-import { colors, spacing } from '../../constants/theme';
+} from '../../../lib/artworks/artworkService';
+import { useLike } from '../../../lib/artworks/useLike';
+import { useLikeContext } from '../../../context/LikeContext';
+import { LikeButton } from '../../../components/LikeButton';
+import { colors, spacing } from '../../../constants/theme';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 const PAGE_LIMIT = 10;
