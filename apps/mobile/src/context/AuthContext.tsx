@@ -1,5 +1,7 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
+import { DeviceEventEmitter } from 'react-native';
 import { AuthService } from '../lib/auth/authService';
+import { AUTH_LOGOUT_EVENT } from '../lib/auth/authStorage';
 
 type AuthStatus = 'loading' | 'authenticated' | 'unauthenticated';
 
@@ -14,7 +16,6 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [status, setStatus] = useState<AuthStatus>('loading');
 
-  // Açılışta bir kez: SecureStore'da token var mı? → flash önleme buradan.
   useEffect(() => {
     let active = true;
     (async () => {
@@ -24,6 +25,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => {
       active = false; // unmount olduysa setState'i yut (async race koruması)
     };
+  }, []);
+
+  // Reaktif logout: AuthStorage.clear() her çağrıldığında tetiklenir.
+  // Asıl amaç refresh-fail — ApiClient token'ı yenileyemeyip clear() çağırınca
+  // ekran asılı kalmasın, kullanıcı login'e düşsün. Normal logout da buradan
+  // geçer (signOut ayrıca kendi setStatus'unu yapar → idempotent).
+  useEffect(() => {
+    const sub = DeviceEventEmitter.addListener(AUTH_LOGOUT_EVENT, () => {
+      setStatus('unauthenticated');
+    });
+    return () => sub.remove();
   }, []);
 
   async function signIn(email: string, password: string) {
