@@ -10,10 +10,17 @@ import {
   StyleSheet,
 } from 'react-native';
 import { useLocalSearchParams, Stack } from 'expo-router';
+import { Alert } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { artworkService, ArtworkDetail } from '../../../lib/artworks/artworkService';
+import {
+  collectionService,
+  CollectionMembership,
+} from '../../../lib/collections/collectionService';
 import { useLike } from '../../../lib/artworks/useLike';
 import { useLikeContext } from '../../../context/LikeContext';
 import { LikeButton } from '../../../components/LikeButton';
+import { SaveToCollectionSheet } from '../../../components/SaveToCollectionSheet';
 import { colors, spacing } from '../../../constants/theme';
 
 export default function ArtworkDetailScreen() {
@@ -21,6 +28,9 @@ export default function ArtworkDetailScreen() {
   const [artwork, setArtwork] = useState<ArtworkDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [saveOpen, setSaveOpen] = useState(false);
+  // Bu eserin bulunduğu koleksiyonlar (bookmark dolu/boş + 0/1/2+ dallanması için)
+  const [memberships, setMemberships] = useState<CollectionMembership[]>([]);
 
   const load = useCallback(async () => {
     if (!slug) return;
@@ -39,6 +49,57 @@ export default function ArtworkDetailScreen() {
   useEffect(() => {
     load();
   }, [load]);
+
+  // Bu eserin bulunduğu koleksiyonları çek (bookmark durumu + dallanma)
+  const loadMemberships = useCallback(async () => {
+    if (!artwork) return;
+    try {
+      const rows = await collectionService.listForArtwork(artwork.id);
+      setMemberships(rows);
+    } catch {
+      // sessiz — bookmark boş kalır, kullanıcı yine de sheet açabilir
+    }
+  }, [artwork]);
+
+  // artwork yüklenince membership'i çek
+  useEffect(() => {
+    loadMemberships();
+  }, [loadMemberships]);
+
+  // Bu eserin içinde olduğu koleksiyonlar
+  const containing = memberships.filter((m) => m.containsArtwork);
+  const isInAnyCollection = containing.length > 0;
+
+  // Bookmark'a basınca 0/1/2+ dallanması
+  const handleBookmarkPress = useCallback(() => {
+    if (!artwork) return;
+    if (containing.length === 1) {
+      // tek koleksiyon → onaylı kısayol (kör silme değil)
+      const only = containing[0];
+      Alert.alert(
+        'Koleksiyondan çıkar',
+        `"${only.name}" koleksiyonundan çıkarılsın mı?`,
+        [
+          { text: 'Vazgeç', style: 'cancel' },
+          {
+            text: 'Çıkar',
+            style: 'destructive',
+            onPress: async () => {
+              try {
+                await collectionService.removeItem(only.id, artwork.id);
+                await loadMemberships(); // bookmark tazelensin
+              } catch {
+                Alert.alert('Hata', 'Çıkarılamadı, tekrar dene.');
+              }
+            },
+          },
+        ],
+      );
+    } else {
+      // 0 veya 2+ → sheet aç
+      setSaveOpen(true);
+    }
+  }, [artwork, containing, loadMemberships]);
 
   if (loading) {
     return (
@@ -68,7 +129,20 @@ export default function ArtworkDetailScreen() {
         <View style={styles.body}>
           <View style={styles.titleRow}>
             <Text style={styles.title}>{artwork.contributors ?? artwork.artist.name}</Text>
-            <DetailLikeButton artwork={artwork} />
+            <View style={styles.actions}>
+              <DetailLikeButton artwork={artwork} />
+              <Pressable
+                onPress={handleBookmarkPress}
+                hitSlop={8}
+                style={styles.saveBtn}
+              >
+                <Ionicons
+                  name={isInAnyCollection ? 'bookmark' : 'bookmark-outline'}
+                  size={26}
+                  color={isInAnyCollection ? colors.primary : colors.text}
+                />
+              </Pressable>
+            </View>
           </View>
 
           {/* Eserdeki metin — alanlardan biri bile doluysa göster (arabicText'e bağlı değil) */}
@@ -103,6 +177,15 @@ export default function ArtworkDetailScreen() {
           </View>
         </View>
       </ScrollView>
+
+      <SaveToCollectionSheet
+        visible={saveOpen}
+        artworkId={artwork.id}
+        onClose={() => {
+          setSaveOpen(false);
+          loadMemberships(); // sheet kapanınca bookmark durumunu tazele (yol a)
+        }}
+      />
     </>
   );
 }
@@ -164,6 +247,14 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     flex: 1,
     marginRight: spacing.md,
+  },
+  actions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+  },
+  saveBtn: {
+    padding: spacing.xs,
   },
   textBlock: {
     backgroundColor: colors.surface,

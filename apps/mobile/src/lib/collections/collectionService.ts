@@ -10,6 +10,17 @@ export interface CollectionListItem {
     coverUrl: string | null;
 }
 
+// GET /collections/for-artwork/:artworkId → sheet'in checkmark listesi.
+// CollectionListItem + containsArtwork. Ayrı tip: bu alan sadece
+// "kaydet sheet'i" bağlamında var, normal liste taşımaz.
+export interface CollectionMembership {
+    id: string;
+    name: string;
+    itemCount: number;
+    coverUrl: string | null;
+    containsArtwork: boolean;
+}
+
 // GET /collections/:id → grid içindeki eser.
 // ArtworkListItem DEĞİL: type/featuredAt/title yok, addedAt var,
 // artist sadece { name }. Benzemek aynı olmak değil.
@@ -33,6 +44,13 @@ class CollectionService {
     // Sayfalama YOK — kullanıcı başına koleksiyon sayısı onlarca mertebesinde.
     async list(): Promise<CollectionListItem[]> {
         return ApiClient.get<CollectionListItem[]>('/collections');
+    }
+
+    // Kaydet sheet'i için: tüm koleksiyonlar + bu eser içlerinde mi.
+    async listForArtwork(artworkId: string): Promise<CollectionMembership[]> {
+        return ApiClient.get<CollectionMembership[]>(
+            `/collections/for-artwork/${artworkId}`,
+        );
     }
 
     async getOne(id: string): Promise<CollectionDetail> {

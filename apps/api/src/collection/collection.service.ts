@@ -6,7 +6,7 @@ import { AddItemDto } from './dto/add-item.dto';
 
 @Injectable()
 export class CollectionService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) { }
 
   // ─── Ownership: tek yerde yaşar ───
   private async assertOwnership(collectionId: string, userId: string): Promise<void> {
@@ -45,6 +45,44 @@ export class CollectionService {
       coverUrl: c.items[0]
         ? (c.items[0].artwork.thumbUrl ?? c.items[0].artwork.imageUrl)
         : null,
+    }));
+  }
+
+  async findAllForArtwork(userId: string, artworkId: string) {
+    const [collections, memberships] = await Promise.all([
+      this.prisma.collection.findMany({
+        where: { userId },
+        orderBy: { createdAt: 'desc' },
+        select: {
+          id: true,
+          name: true,
+          _count: { select: { items: true } },
+          items: {
+            take: 1,
+            orderBy: { addedAt: 'desc' },
+            select: {
+              artwork: { select: { thumbUrl: true, imageUrl: true } },
+            },
+          },
+        },
+      }),
+      // bu eserin bulunduğu koleksiyon id'leri (sadece kullanıcının)
+      this.prisma.collectionItem.findMany({
+        where: { artworkId, collection: { userId } },
+        select: { collectionId: true },
+      }),
+    ]);
+
+    const memberSet = new Set(memberships.map((m) => m.collectionId));
+
+    return collections.map((c) => ({
+      id: c.id,
+      name: c.name,
+      itemCount: c._count.items,
+      coverUrl: c.items[0]
+        ? (c.items[0].artwork.thumbUrl ?? c.items[0].artwork.imageUrl)
+        : null,
+      containsArtwork: memberSet.has(c.id),
     }));
   }
 
