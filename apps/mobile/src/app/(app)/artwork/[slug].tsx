@@ -8,9 +8,9 @@ import {
   ActivityIndicator,
   Pressable,
   StyleSheet,
+  Alert,
 } from 'react-native';
 import { useLocalSearchParams, Stack } from 'expo-router';
-import { Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { artworkService, ArtworkDetail } from '../../../lib/artworks/artworkService';
 import {
@@ -22,6 +22,8 @@ import { useLikeContext } from '../../../context/LikeContext';
 import { LikeButton } from '../../../components/LikeButton';
 import { SaveToCollectionSheet } from '../../../components/SaveToCollectionSheet';
 import { colors, spacing } from '../../../constants/theme';
+import { ActionSheet } from '../../../components/ActionSheet';
+import { downloadImageToGallery } from '../../../lib/media/downloadImage';
 
 export default function ArtworkDetailScreen() {
   const { slug } = useLocalSearchParams<{ slug: string }>();
@@ -31,6 +33,8 @@ export default function ArtworkDetailScreen() {
   const [saveOpen, setSaveOpen] = useState(false);
   // Bu eserin bulunduğu koleksiyonlar (bookmark dolu/boş + 0/1/2+ dallanması için)
   const [memberships, setMemberships] = useState<CollectionMembership[]>([]);
+  const [menuVisible, setMenuVisible] = useState(false);
+  const [downloading, setDownloading] = useState(false);
 
   const load = useCallback(async () => {
     if (!slug) return;
@@ -101,6 +105,23 @@ export default function ArtworkDetailScreen() {
     }
   }, [artwork, containing, loadMemberships]);
 
+  // 3. İndir handler — Galeriye indirme işlemini yönetir
+  const handleDownload = async () => {
+    if (!artwork) return;
+    setDownloading(true);
+    const result = await downloadImageToGallery(artwork.imageUrl, artwork.id);
+    setDownloading(false);
+
+    if (result.ok) {
+      setMenuVisible(false);
+      Alert.alert('Başarılı', 'Görsel galeriye kaydedildi');
+    } else if (result.reason === 'permission') {
+      Alert.alert('Hata', 'Kaydetmek için galeri izni gerekli');
+    } else {
+      Alert.alert('Hata', 'İndirilemedi, tekrar deneyin');
+    }
+  };
+
   if (loading) {
     return (
       <View style={styles.centered}>
@@ -122,7 +143,18 @@ export default function ArtworkDetailScreen() {
 
   return (
     <>
-      <Stack.Screen options={{ title: artwork.contributors ?? artwork.artist.name, headerShown: true }} />
+      {/* 4. Üç nokta butonu — Stack.Screen headerRight içerisine yerleştirildi */}
+      <Stack.Screen 
+        options={{ 
+          title: artwork.contributors ?? artwork.artist.name, 
+          headerShown: true,
+          headerRight: () => (
+            <Pressable onPress={() => setMenuVisible(true)} hitSlop={8} style={{ marginRight: spacing.sm }}>
+              <Ionicons name="ellipsis-horizontal" size={24} color={colors.text} />
+            </Pressable>
+          ),
+        }} 
+      />
       <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
         <Image source={{ uri: artwork.imageUrl }} style={styles.image} resizeMode="contain" />
 
@@ -185,6 +217,20 @@ export default function ArtworkDetailScreen() {
           setSaveOpen(false);
           loadMemberships(); // sheet kapanınca bookmark durumunu tazele (yol a)
         }}
+      />
+
+      {/* 5. Menü (ActionSheet) — SaveToCollectionSheet'in hemen altına eklendi */}
+      <ActionSheet
+        visible={menuVisible}
+        onClose={() => setMenuVisible(false)}
+        items={[
+          {
+            icon: 'download-outline',
+            label: 'İndir',
+            onPress: handleDownload,
+            loading: downloading,
+          },
+        ]}
       />
     </>
   );
