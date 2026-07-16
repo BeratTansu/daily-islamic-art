@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
+import { useFocusEffect } from 'expo-router';
 import {
     ActivityIndicator,
     StyleSheet,
@@ -23,28 +24,30 @@ export default function Profile() {
     const [collectionCount, setCollectionCount] = useState<number | null>(null);
     const [signingOut, setSigningOut] = useState(false);
 
-    useEffect(() => {
-        let active = true;
-        (async () => {
-            try {
-                // Üçü paralel: kullanıcı bilgisi + beğeni sayısı + koleksiyon sayısı.
-                const [me, liked, collections] = await Promise.all([
-                    AuthService.me(),
-                    artworkService.listLiked({ limit: 1 }),
-                    collectionService.list(),
-                ]);
-                if (!active) return;
-                setUser(me);
-                setLikeCount(liked.meta.total);
-                setCollectionCount(collections.length);
-            } catch {
-                /* bilgi gelmezse ekran yine çalışır, çıkış butonu erişilebilir kalır */
-            }
-        })();
-        return () => {
-            active = false;
-        };
-    }, []);
+    useFocusEffect(
+        useCallback(() => {
+            let active = true;
+            (async () => {
+                try {
+                    // Üçü paralel: kullanıcı bilgisi + beğeni sayısı + koleksiyon sayısı.
+                    const [me, liked, collections] = await Promise.all([
+                        AuthService.me(),
+                        artworkService.listLiked({ limit: 1 }),
+                        collectionService.list(),
+                    ]);
+                    if (!active) return;
+                    setUser(me);
+                    setLikeCount(liked.meta.total);
+                    setCollectionCount(collections.length);
+                } catch {
+                    /* bilgi gelmezse ekran yine çalışır, çıkış butonu erişilebilir kalır */
+                }
+            })();
+            return () => {
+                active = false;
+            };
+        }, []),
+    );
 
     async function handleSignOut() {
         if (signingOut) return;
