@@ -1,8 +1,12 @@
 import { AuthStorage } from './authStorage';
+import Constants from 'expo-constants';
+
 
 // Android emülatör → makinenin localhost'u 10.0.2.2.
 // iOS simülatör localhost'u paylaşır ama tek değer tutuyoruz; cihaz/prod'da değişecek (aşağıda not).
-const BASE_URL = 'http://10.0.2.2:3000';
+const BASE_URL =
+  (Constants.expoConfig?.extra?.apiUrl as string | undefined) ??
+  'http://10.0.2.2:3000';
 
 export interface AuthResponse {
   user: {
