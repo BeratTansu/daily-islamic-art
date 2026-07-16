@@ -155,7 +155,7 @@ export function SaveToCollectionSheet({ visible, artworkId, onClose }: Props) {
                       }
                       size={20}
                       color={
-                        item.containsArtwork ? colors.primary : colors.text
+                        item.containsArtwork ? colors.primary : colors.textMuted
                       }
                     />
                     <Text style={styles.rowText} numberOfLines={1}>

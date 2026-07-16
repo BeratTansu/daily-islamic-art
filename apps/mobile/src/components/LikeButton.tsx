@@ -1,5 +1,6 @@
 // src/components/LikeButton.tsx
-import { Pressable, Text, StyleSheet } from 'react-native';
+import { Pressable, StyleSheet } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing } from '../constants/theme';
 
 interface Props {
@@ -19,10 +20,11 @@ export function LikeButton({ isLiked, onPress, size = 24 }: Props) {
             accessibilityRole="button"
             accessibilityLabel={isLiked ? 'Beğeniyi kaldır' : 'Beğen'}
         >
-            {/* Unicode kalp — lucide/vector-icons çekilmedi (YAGNI, panel yıldızıyla aynı gerekçe) */}
-            <Text style={{ fontSize: size, color: isLiked ? colors.like : colors.textMuted }}>
-                {isLiked ? '♥' : '♡'}
-            </Text>
+            <Ionicons
+                name={isLiked ? 'heart' : 'heart-outline'}
+                size={size}
+                color={isLiked ? colors.like : colors.textMuted}
+            />
         </Pressable>
     );
 }
