@@ -14,10 +14,12 @@ import {
 } from '../../../lib/artworks/artworkService';
 import { ArtworkGrid } from '../../../components/ArtworkGrid';
 import { colors, spacing } from '../../../constants/theme';
+import { useNavigationGuard } from '../../../lib/hooks/useNavigationGuard';
 
 const PAGE_LIMIT = 30;
 
 export default function LikedScreen() {
+    const guardNavigate = useNavigationGuard();
     const [items, setItems] = useState<ArtworkListItem[]>([]);
     const [total, setTotal] = useState(0);
     const [page, setPage] = useState(1);
@@ -72,8 +74,8 @@ export default function LikedScreen() {
     }, [loadingMore, hasMore, loading, page]);
 
     const goToArtwork = useCallback((slug: string) => {
-        router.push({ pathname: '/artwork/[slug]', params: { slug } });
-    }, []);
+        guardNavigate(() => router.push({ pathname: '/artwork/[slug]', params: { slug } }));
+    }, [guardNavigate]);
 
     if (loading) {
         return (

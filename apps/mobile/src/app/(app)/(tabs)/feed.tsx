@@ -12,6 +12,7 @@ import {
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { runOnJS } from 'react-native-reanimated';
 import { router } from 'expo-router';
+import { SearchBar } from '../../../components/SearchBar';
 import {
     artworkService,
     ArtworkListItem,
@@ -149,6 +150,7 @@ export default function FeedScreen() {
 
     const renderHeader = () => (
         <View>
+            <SearchBar onPress={() => router.push('/search')} />
             <Text style={styles.dailyLabel}>Günün Eseri</Text>
             {daily && (
                 <DailyCard

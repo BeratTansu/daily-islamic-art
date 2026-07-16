@@ -15,8 +15,10 @@ import {
 } from '../../../lib/collections/collectionService';
 import { ArtworkGrid } from '../../../components/ArtworkGrid';
 import { colors, spacing } from '../../../constants/theme';
+import { useNavigationGuard } from '../../../lib/hooks/useNavigationGuard';
 
 export default function CollectionDetailScreen() {
+    const guardNavigate = useNavigationGuard();
     const { id } = useLocalSearchParams<{ id: string }>();
     const [collection, setCollection] = useState<CollectionDetail | null>(null);
     const [loading, setLoading] = useState(true);
@@ -49,8 +51,8 @@ export default function CollectionDetailScreen() {
     );
 
     const goToArtwork = useCallback((slug: string) => {
-        router.push({ pathname: '/artwork/[slug]', params: { slug } });
-    }, []);
+        guardNavigate(() => router.push({ pathname: '/artwork/[slug]', params: { slug } }));
+    }, [guardNavigate]);
 
     // Silme: görünür buton → onay → sil → listeye geri dön.
     // Alert.alert iki platformda da çalışır (Alert.prompt'un aksine).

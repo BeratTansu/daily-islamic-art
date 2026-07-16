@@ -127,11 +127,9 @@ export class ArtworkService {
             ...(script && { script }),
             ...(artistId && { artistId }),
             ...(q && {
-                OR: [
-                    { title: { contains: q, mode: 'insensitive' } },
-                    { arabicText: { contains: q, mode: 'insensitive' } },
-                    { translation: { contains: q, mode: 'insensitive' } },
-                ],
+                artist: {
+                    is: { name: { contains: q, mode: 'insensitive' } },
+                },
             }),
         };
 
