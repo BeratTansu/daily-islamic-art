@@ -26,6 +26,30 @@ export class ApiError extends Error {
   }
 }
 
+// Ağ isteği bu süreyi aşarsa iptal edilir → sonsuz spinner yerine ErrorState.
+const REQUEST_TIMEOUT_MS = 10_000;
+
+// fetch'i AbortController ile sarmalar. Timeout dolarsa isteği iptal eder
+// ve ApiError(0) fırlatır (network katmanı hatası, HTTP status yok → 0).
+// signal.aborted kullanımı err.name'den daha güvenilir (RN'de name tutarsız olabilir).
+async function fetchWithTimeout(
+  input: string,
+  init: RequestInit,
+): Promise<Response> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  try {
+    return await fetch(input, { ...init, signal: controller.signal });
+  } catch (err) {
+    if (controller.signal.aborted) {
+      throw new ApiError('Sunucuya ulaşılamadı (zaman aşımı)', 0);
+    }
+    throw err; // gerçek network hatası (bağlantı yok vs.) — olduğu gibi geçir
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 let refreshPromise: Promise<boolean> | null = null;
 
 async function doRefresh(): Promise<boolean> {
@@ -33,7 +57,7 @@ async function doRefresh(): Promise<boolean> {
   if (!refreshToken) return false;
 
   try {
-    const res = await fetch(`${BASE_URL}/auth/refresh`, {
+    const res = await fetchWithTimeout(`${BASE_URL}/auth/refresh`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ refreshToken }),
@@ -100,12 +124,12 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
 
   const init: RequestInit = { ...rest, body: serializedBody };
 
-  let res = await fetch(`${BASE_URL}${path}`, { ...init, headers: await buildHeaders() });
+  let res = await fetchWithTimeout(`${BASE_URL}${path}`, { ...init, headers: await buildHeaders() });
 
   if (res.status === 401 && auth) {
     const refreshed = await refreshOnce();
     if (refreshed) {
-      res = await fetch(`${BASE_URL}${path}`, { ...init, headers: await buildHeaders() });
+      res = await fetchWithTimeout(`${BASE_URL}${path}`, { ...init, headers: await buildHeaders() });
     }
   }
 
