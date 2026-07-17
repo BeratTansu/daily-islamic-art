@@ -16,6 +16,8 @@ import {
 import { ArtworkGrid } from '../../../components/ArtworkGrid';
 import { colors, spacing } from '../../../constants/theme';
 import { useNavigationGuard } from '../../../lib/hooks/useNavigationGuard';
+import { EmptyState } from '../../../components/EmptyState';
+import { ErrorState } from '../../../components/ErrorState';
 
 export default function CollectionDetailScreen() {
     const guardNavigate = useNavigationGuard();
@@ -90,12 +92,11 @@ export default function CollectionDetailScreen() {
 
     if (error || !collection) {
         return (
-            <View style={styles.centered}>
-                <Text style={styles.errorText}>{error ?? 'Koleksiyon bulunamadı.'}</Text>
-                <Pressable style={styles.retryBtn} onPress={() => router.back()}>
-                    <Text style={styles.retryText}>Geri dön</Text>
-                </Pressable>
-            </View>
+            <ErrorState
+                message={error ?? 'Koleksiyon bulunamadı.'}
+                actionLabel="Geri dön"
+                onAction={() => router.back()}
+            />
         );
     }
 
@@ -109,10 +110,7 @@ export default function CollectionDetailScreen() {
     );
 
     const empty = (
-        <View style={styles.emptyWrap}>
-            <Ionicons name="images-outline" size={48} color={colors.textMuted} />
-            <Text style={styles.emptyText}>Bu koleksiyon henüz boş.</Text>
-        </View>
+        <EmptyState icon="images-outline" message="Bu koleksiyon henüz boş." />
     );
 
     return (

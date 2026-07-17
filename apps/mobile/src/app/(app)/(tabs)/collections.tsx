@@ -16,6 +16,8 @@ import { collectionService } from '../../../lib/collections/collectionService';
 import { artworkService } from '../../../lib/artworks/artworkService';
 import { CreateCollectionModal } from '../../../components/CreateCollectionModal';
 import { colors, spacing } from '../../../constants/theme';
+import { EmptyState } from '../../../components/EmptyState';
+
 
 // İki farklı şeyi tek listede göstermek için ortak satır tipi.
 // 'liked' = sistem satırı (Beğendiklerim), 'collection' = gerçek koleksiyon.
@@ -170,6 +172,17 @@ export default function CollectionsScreen() {
                 contentContainerStyle={styles.listContent}
                 refreshControl={
                     <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
+                }
+                ListFooterComponent={
+                    rows.length === 1 ? (
+                        <EmptyState
+                            icon="albums-outline"
+                            message="Henüz kendi koleksiyonun yok. Keşfet'ten eser ekleyerek başla."
+                            actionLabel="Keşfet'e git"
+                            onAction={() => router.push('/(app)/(tabs)/feed')}
+                            fillScreen={false}
+                        />
+                    ) : null
                 }
             />
 

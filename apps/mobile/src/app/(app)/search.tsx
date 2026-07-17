@@ -15,11 +15,15 @@ import type { ArtworkListItem } from '../../lib/artworks/artworkService';
 import { useDebounce } from '../../lib/hooks/useDebounce';
 import { colors, spacing } from '../../constants/theme';
 import { useNavigationGuard } from '../../lib/hooks/useNavigationGuard';
+import { EmptyState } from '../../components/EmptyState';
+import { ErrorState } from '../../components/ErrorState';
 
 export default function SearchScreen() {
     const [query, setQuery] = useState('');
     const [results, setResults] = useState<ArtworkListItem[]>([]);
     const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(false);
+    const [retryTick, setRetryTick] = useState(0);
     const guardNavigate = useNavigationGuard();
 
     const debouncedQuery = useDebounce(query, 350);
@@ -36,6 +40,7 @@ export default function SearchScreen() {
         let active = true; // race guard: geç dönen eski istek yeni sonucu ezmesin
         setLoading(true);
 
+        setError(false); // her yeni aramada sıfırla
         artworkService
             .list({ q: trimmed, limit: 20 })
             .then((res) => {
@@ -44,6 +49,7 @@ export default function SearchScreen() {
             })
             .catch(() => {
                 if (!active) return;
+                setError(true);
                 setResults([]);
             })
             .finally(() => {
@@ -53,7 +59,7 @@ export default function SearchScreen() {
         return () => {
             active = false;
         };
-    }, [trimmed]);
+    }, [trimmed, retryTick]);
 
     return (
         <View style={styles.container}>
@@ -87,16 +93,17 @@ export default function SearchScreen() {
             {/* Durumlar: yükleniyor / başlangıç / boş sonuç / sonuç */}
             {loading ? (
                 <View style={styles.center}>
-                    <ActivityIndicator color={colors.primary} />
+                    <ActivityIndicator size="large" color={colors.primary} />
                 </View>
+            ) : error ? (
+                <ErrorState onAction={() => setRetryTick((t) => t + 1)} />
             ) : trimmed === '' ? (
-                <View style={styles.center}>
-                    <Text style={styles.hint}>Sanatçı adıyla arama yap</Text>
-                </View>
+                <EmptyState icon="search-outline" message="Sanatçı adıyla arama yap" />
             ) : results.length === 0 ? (
-                <View style={styles.center}>
-                    <Text style={styles.hint}>"{trimmed}" için sonuç bulunamadı</Text>
-                </View>
+                <EmptyState
+                    icon="sad-outline"
+                    message={`"${trimmed}" için sonuç bulunamadı`}
+                />
             ) : (
                 <ArtworkGrid
                     data={results}

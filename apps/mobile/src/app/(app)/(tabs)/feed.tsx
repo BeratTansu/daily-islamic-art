@@ -23,6 +23,8 @@ import { useLikeContext } from '../../../context/LikeContext';
 import { LikeButton } from '../../../components/LikeButton';
 import { colors, spacing } from '../../../constants/theme';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { EmptyState } from '../../../components/EmptyState';
+import { ErrorState } from '../../../components/ErrorState';
 
 const PAGE_LIMIT = 10;
 
@@ -136,14 +138,7 @@ export default function FeedScreen() {
 
     // --- İlk yükleme hatası (feed boş + hata) ---
     if (error && items.length === 0) {
-        return (
-            <View style={styles.centered}>
-                <Text style={styles.errorText}>{error}</Text>
-                <Pressable style={styles.retryBtn} onPress={onRefresh}>
-                    <Text style={styles.retryText}>Tekrar dene</Text>
-                </Pressable>
-            </View>
-        );
+        return <ErrorState message={error} onAction={onRefresh} />;
     }
 
 
@@ -185,9 +180,7 @@ export default function FeedScreen() {
                     ) : null
                 }
                 ListEmptyComponent={
-                    <View style={styles.centered}>
-                        <Text style={styles.emptyText}>Henüz eser yok.</Text>
-                    </View>
+                    <EmptyState icon="image-outline" message="Henüz eser yok." />
                 }
             />
         </SafeAreaView>

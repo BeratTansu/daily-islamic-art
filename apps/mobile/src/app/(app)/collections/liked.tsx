@@ -15,6 +15,8 @@ import {
 import { ArtworkGrid } from '../../../components/ArtworkGrid';
 import { colors, spacing } from '../../../constants/theme';
 import { useNavigationGuard } from '../../../lib/hooks/useNavigationGuard';
+import { EmptyState } from '../../../components/EmptyState';
+import { ErrorState } from '../../../components/ErrorState';
 
 const PAGE_LIMIT = 30;
 
@@ -86,14 +88,7 @@ export default function LikedScreen() {
     }
 
     if (error && items.length === 0) {
-        return (
-            <View style={styles.centered}>
-                <Text style={styles.errorText}>{error}</Text>
-                <Pressable style={styles.retryBtn} onPress={loadFirstPage}>
-                    <Text style={styles.retryText}>Tekrar dene</Text>
-                </Pressable>
-            </View>
-        );
+        return <ErrorState message={error} onAction={loadFirstPage} />;
     }
 
     const header = (
@@ -104,10 +99,12 @@ export default function LikedScreen() {
     );
 
     const empty = (
-        <View style={styles.emptyWrap}>
-            <Ionicons name="heart-outline" size={48} color={colors.textMuted} />
-            <Text style={styles.emptyText}>Henüz beğendiğin bir eser yok.</Text>
-        </View>
+        <EmptyState
+            icon="heart-outline"
+            message="Henüz beğendiğin bir eser yok."
+            actionLabel="Keşfet'e git"
+            onAction={() => router.push('/(app)/(tabs)/feed')}
+        />
     );
 
     const footer = loadingMore ? (
