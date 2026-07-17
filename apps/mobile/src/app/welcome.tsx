@@ -10,7 +10,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { artworkService, type ArtworkDetail } from '../lib/artworks/artworkService';
-import { colors, spacing } from '../constants/theme';
+import { colors, spacing, fontFamily } from '../constants/theme';
 
 export default function Welcome() {
     const [daily, setDaily] = useState<ArtworkDetail | null>(null);
@@ -63,6 +63,11 @@ export default function Welcome() {
             >
                 <View style={styles.header}>
                     <Text style={styles.title}>Daily Islamic Art</Text>
+                    <View style={styles.divider}>
+                        <View style={styles.dividerLine} />
+                        <Text style={styles.dividerMark}>✦</Text>
+                        <View style={styles.dividerLine} />
+                    </View>
                     <Text style={styles.subtitle}>
                         Her gün yeni bir İslam sanatı eseri keşfet.
                     </Text>
@@ -110,10 +115,29 @@ const styles = StyleSheet.create({
         gap: spacing.sm,
     },
     title: {
-        fontSize: 34,
-        fontWeight: '700',
+        fontSize: 40,
+        fontFamily: fontFamily.serif,
         color: '#fff',
-        letterSpacing: 0.3,
+        letterSpacing: 2,
+    },
+    divider: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: spacing.sm,
+        maxWidth: 240,
+        marginTop: spacing.xs,
+    },
+    dividerLine: {
+        flex: 1,
+        height: 1.5,
+        backgroundColor: colors.accent,
+    },
+    dividerMark: {
+        color: colors.accent,
+        fontSize: 18,
+        textShadowColor: 'rgba(0,0,0,0.4)',
+        textShadowOffset: { width: 0, height: 1 },
+        textShadowRadius: 3,
     },
     subtitle: {
         fontSize: 16,

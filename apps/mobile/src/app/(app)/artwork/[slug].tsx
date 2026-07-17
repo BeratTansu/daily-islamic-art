@@ -21,7 +21,7 @@ import { useLike } from '../../../lib/artworks/useLike';
 import { useLikeContext } from '../../../context/LikeContext';
 import { LikeButton } from '../../../components/LikeButton';
 import { SaveToCollectionSheet } from '../../../components/SaveToCollectionSheet';
-import { colors, spacing, fontSize, fontWeight } from '../../../constants/theme';
+import { colors, spacing, fontSize, fontWeight, fontFamily } from '../../../constants/theme';
 import { ActionSheet } from '../../../components/ActionSheet';
 import { downloadImageToGallery } from '../../../lib/media/downloadImage';
 
@@ -292,8 +292,9 @@ const styles = StyleSheet.create({
   },
   title: {
     color: colors.text,
-    fontSize: fontSize.title,
-    fontWeight: fontWeight.bold,
+    fontSize: 28,
+    fontFamily: fontFamily.serif,
+    letterSpacing: 0.5,
     flex: 1,
     marginRight: spacing.md,
   },

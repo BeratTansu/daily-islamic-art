@@ -21,7 +21,7 @@ import {
 import { useLike } from '../../../lib/artworks/useLike';
 import { useLikeContext } from '../../../context/LikeContext';
 import { LikeButton } from '../../../components/LikeButton';
-import { colors, spacing, fontSize, fontWeight } from '../../../constants/theme';
+import { colors, spacing, fontSize, fontWeight, fontFamily } from '../../../constants/theme';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { EmptyState } from '../../../components/EmptyState';
 import { ErrorState } from '../../../components/ErrorState';
@@ -156,6 +156,13 @@ export default function FeedScreen() {
                     onDoubleTapLike={likeOnly}
                 />
             )}
+            {daily && (
+                <View style={styles.divider}>
+                    <View style={styles.dividerLine} />
+                    <Text style={styles.dividerMark}>✦</Text>
+                    <View style={styles.dividerLine} />
+                </View>
+            )}
         </View>
     );
 
@@ -250,7 +257,7 @@ function DailyCard({
                     Kalp GestureDetector içinde olsaydı jest onu yutardı. */}
                 <View style={styles.metaRow}>
                     <Pressable style={styles.metaText} onPress={() => onPress(daily.slug)}>
-                        <Text style={styles.cardArtist} numberOfLines={1}>
+                        <Text style={styles.dailyArtist} numberOfLines={1}>
                             {daily.artist.name}
                         </Text>
                     </Pressable>
@@ -318,12 +325,35 @@ const styles = StyleSheet.create({
         marginBottom: spacing.lg,
     },
     dailyLabel: {
-        color: colors.textMuted,
+        color: colors.accent,
         fontSize: fontSize.caption,
         fontWeight: fontWeight.semibold,
         textTransform: 'uppercase',
-        letterSpacing: 1,
+        letterSpacing: 2,
         marginBottom: spacing.sm,
+    },
+    divider: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: spacing.sm,
+        alignSelf: 'center',
+        maxWidth: 200,
+        marginTop: spacing.xs,
+        marginBottom: spacing.lg,
+    },
+    dividerLine: {
+        flex: 1,
+        height: 1,
+        backgroundColor: colors.accent,
+    },
+    dividerMark: {
+        color: colors.accent,
+        fontSize: 14,
+    },
+    dailyArtist: {
+        fontSize: 22,
+        fontFamily: fontFamily.serif,
+        color: colors.text,
     },
     dailyCard: {
         backgroundColor: colors.surface,

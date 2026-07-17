@@ -10,7 +10,7 @@ import {
     View,
 } from 'react-native';
 import { useAuth } from '../context/AuthContext';
-import { colors, spacing } from '../constants/theme';
+import { colors, spacing, fontFamily } from '../constants/theme';
 import { router } from 'expo-router';
 
 export default function Register() {
@@ -133,8 +133,9 @@ const styles = StyleSheet.create({
     },
     form: { gap: spacing.md },
     title: {
-        fontSize: 24,
-        fontWeight: '700',
+        fontSize: 32,
+        fontFamily: fontFamily.serif,
+        letterSpacing: 1,
         color: colors.text,
         textAlign: 'center',
         marginBottom: spacing.lg,

@@ -13,7 +13,7 @@ import { useAuth } from '../../../context/AuthContext';
 import { AuthService, type AuthUser } from '../../../lib/auth/authService';
 import { artworkService } from '../../../lib/artworks/artworkService';
 import { collectionService } from '../../../lib/collections/collectionService';
-import { colors, spacing, fontSize, fontWeight } from '../../../constants/theme';
+import { colors, spacing, fontSize, fontWeight, fontFamily } from '../../../constants/theme';
 
 export default function Profile() {
     const { signOut } = useAuth();
@@ -143,8 +143,9 @@ const styles = StyleSheet.create({
         color: '#fff',
     },
     name: {
-        fontSize: fontSize.title,
-        fontWeight: fontWeight.bold,
+        fontSize: 28,
+        fontFamily: fontFamily.serif,
+        letterSpacing: 0.5,
         color: colors.text,
     },
     email: {

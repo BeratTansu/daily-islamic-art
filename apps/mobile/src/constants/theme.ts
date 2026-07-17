@@ -49,3 +49,9 @@ export const fontWeight = {
   semibold: '600',
   bold: '700',
 } as const;
+
+// Başlık fontu (Cormorant Garamond, 500 medium) — SADECE başlıklarda.
+// Gövde/UI metni sistem sans'ında kalır (okunabilirlik + referans yapısı).
+export const fontFamily = {
+  serif: 'CormorantGaramond_500Medium',
+} as const;

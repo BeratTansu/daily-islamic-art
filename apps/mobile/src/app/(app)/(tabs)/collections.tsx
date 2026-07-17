@@ -15,7 +15,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { collectionService } from '../../../lib/collections/collectionService';
 import { artworkService } from '../../../lib/artworks/artworkService';
 import { CreateCollectionModal } from '../../../components/CreateCollectionModal';
-import { colors, spacing, fontSize, fontWeight } from '../../../constants/theme';
+import { colors, spacing, fontSize, fontWeight, fontFamily } from '../../../constants/theme';
 import { EmptyState } from '../../../components/EmptyState';
 import { ErrorState } from '../../../components/ErrorState';
 
@@ -213,8 +213,9 @@ const styles = StyleSheet.create({
         paddingVertical: spacing.md,
     },
     headerTitle: {
-        fontSize: fontSize.title,
-        fontWeight: fontWeight.bold,
+        fontSize: 28,
+        fontFamily: fontFamily.serif,
+        letterSpacing: 0.5,
         color: colors.text,
     },
     newBtn: {
