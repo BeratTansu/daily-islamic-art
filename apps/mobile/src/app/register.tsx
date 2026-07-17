@@ -25,16 +25,28 @@ export default function Register() {
         if (submitting) return;
         setError(null);
 
-        // Basit client-side kontrol — backend DTO kurallarını doğrulayınca
-        // buradaki min uzunluk vs. ona göre güncellenecek.
-        if (!displayName.trim() || !email.trim() || !password) {
+        // Client-side validasyon = backend RegisterDto kurallarının aynası (UX kolaylığı).
+        // Backend hâlâ tek gerçek kaynak; bu sadece kullanıcıyı erken uyarır.
+        // KURAL SENKRONU: backend register.dto.ts değişirse burası da güncellenmeli.
+        const name = displayName.trim();
+        const mail = email.trim();
+
+        if (!name || !mail || !password) {
             setError('Tüm alanları doldur.');
+            return;
+        }
+        if (name.length < 2) {
+            setError('Ad en az 2 karakter olmalı.');
+            return;
+        }
+        if (password.length < 8) {
+            setError('Şifre en az 8 karakter olmalı.');
             return;
         }
 
         setSubmitting(true);
         try {
-            await register(email.trim(), password, displayName.trim());
+            await register(mail, password, name);
             router.replace('/feed'); // kayıt = otomatik giriş; imperatif yönlendir
         } catch (e) {
             setError(e instanceof Error ? e.message : 'Kayıt başarısız. Tekrar dene.');

@@ -14,7 +14,9 @@
     "import:metadata": "tsx scripts/import-metadata.ts",
     "publish:curated": "tsx scripts/publish-curated.ts",
     "unpublish:seed": "tsx scripts/unpublish-seed.ts",
-    "unpublish:all": "tsx scripts/unpublish-all.ts"
+    "unpublish:all": "tsx scripts/unpublish-all.ts",
+    "count:junk": "tsx scripts/count-junk-users.ts",
+    "delete:junk": "tsx scripts/delete-junk-users.ts"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",
