@@ -14,7 +14,7 @@ const config: ExpoConfig = {
   android: {
     package: 'app.dia.mobile',
     adaptiveIcon: {
-      backgroundColor: '#E6F4FE',
+      backgroundColor: '#F5EDE1',
       foregroundImage: './assets/images/android-icon-foreground.png',
       backgroundImage: './assets/images/android-icon-background.png',
       monochromeImage: './assets/images/android-icon-monochrome.png',
@@ -30,9 +30,9 @@ const config: ExpoConfig = {
     [
       'expo-splash-screen',
       {
-        backgroundColor: '#208AEF',
+        backgroundColor: '#F5EDE1',
         image: './assets/images/splash-icon.png',
-        imageWidth: 76,
+        imageWidth: 160,
       },
     ],
     'expo-secure-store',
