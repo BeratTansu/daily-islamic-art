@@ -372,23 +372,4 @@ const styles = StyleSheet.create({
     footer: {
         paddingVertical: spacing.lg,
     },
-    emptyText: {
-        color: colors.textMuted,
-        fontSize: fontSize.body,
-    },
-    errorText: {
-        color: colors.danger,
-        fontSize: fontSize.body,
-        marginBottom: spacing.md,
-    },
-    retryBtn: {
-        backgroundColor: colors.primary,
-        paddingHorizontal: spacing.lg,
-        paddingVertical: spacing.sm,
-        borderRadius: 8,
-    },
-    retryText: {
-        color: colors.background,
-        fontWeight: fontWeight.semibold,
-    },
 });

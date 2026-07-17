@@ -155,9 +155,4 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         padding: spacing.xl,
     },
-    hint: {
-        fontSize: 15,
-        color: colors.textMuted,
-        textAlign: 'center',
-    },
 });

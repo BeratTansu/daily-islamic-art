@@ -17,6 +17,7 @@ import { artworkService } from '../../../lib/artworks/artworkService';
 import { CreateCollectionModal } from '../../../components/CreateCollectionModal';
 import { colors, spacing, fontSize, fontWeight } from '../../../constants/theme';
 import { EmptyState } from '../../../components/EmptyState';
+import { ErrorState } from '../../../components/ErrorState';
 
 
 // İki farklı şeyi tek listede göstermek için ortak satır tipi.
@@ -147,10 +148,7 @@ export default function CollectionsScreen() {
     if (error && rows.length === 0) {
         return (
             <View style={styles.centered}>
-                <Text style={styles.errorText}>{error}</Text>
-                <Pressable style={styles.retryBtn} onPress={onRefresh}>
-                    <Text style={styles.retryText}>Tekrar dene</Text>
-                </Pressable>
+                <ErrorState message={error} onAction={onRefresh} />
             </View>
         );
     }
@@ -266,20 +264,5 @@ const styles = StyleSheet.create({
         fontSize: fontSize.caption,
         color: colors.textMuted,
         marginTop: 2,
-    },
-    errorText: {
-        color: colors.danger,
-        fontSize: fontSize.body,
-        marginBottom: spacing.md,
-    },
-    retryBtn: {
-        backgroundColor: colors.primary,
-        paddingHorizontal: spacing.lg,
-        paddingVertical: spacing.sm,
-        borderRadius: 8,
-    },
-    retryText: {
-        color: colors.background,
-        fontWeight: fontWeight.semibold,
     },
 });
