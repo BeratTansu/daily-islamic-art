@@ -1,5 +1,5 @@
 import { View, Text, Pressable, StyleSheet } from 'react-native';
-import { colors, spacing } from '../constants/theme';
+import { colors, spacing, fontSize, fontWeight } from '../constants/theme';
 
 type Props = {
   // Opsiyonel — verilmezse genel mesaj. feed/[id]/liked mesaj geçer, search geçmez.
@@ -33,7 +33,7 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   message: {
-    fontSize: 16,
+    fontSize: fontSize.heading,
     color: colors.text, // danger değil — kırmızı metin fazla agresif, buton bağlamı yeterli
     textAlign: 'center',
   },
@@ -44,8 +44,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary,
   },
   buttonText: {
-    fontSize: 15,
-    fontWeight: '600',
+    fontSize: fontSize.body,
+    fontWeight: fontWeight.semibold,
     color: colors.background, // primary üstünde beyaz
   },
 });

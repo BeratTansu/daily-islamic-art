@@ -22,3 +22,19 @@ export const spacing = {
   lg: 24,
   xl: 32,
 } as const;
+
+export const fontSize = {
+  title: 24,       // ekran başlığı (detay title)
+  subheading: 18,   // modal/sheet başlığı
+  heading: 16,     // kart/bölüm başlığı
+  body: 15,        // gövde metni
+  secondary: 14,   // ikincil (meta label/value)
+  caption: 13,     // küçük/etiket (sourceRef, dailyLabel)
+} as const;
+
+export const fontWeight = {
+  regular: '400',
+  medium: '500',
+  semibold: '600',
+  bold: '700',
+} as const;

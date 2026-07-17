@@ -9,7 +9,7 @@ import {
   StyleSheet,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, spacing } from '../constants/theme';
+import { colors, spacing, fontSize, fontWeight } from '../constants/theme';
 import {
   collectionService,
   CollectionMembership,
@@ -211,8 +211,8 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   title: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: fontSize.subheading,
+    fontWeight: fontWeight.semibold,
     color: colors.text,
     marginBottom: spacing.md,
   },
@@ -226,9 +226,9 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xs,
   },
   newText: {
-    fontSize: 16,
+    fontSize: fontSize.heading,
     color: colors.primary,
-    fontWeight: '500',
+    fontWeight: fontWeight.medium,
   },
   row: {
     flexDirection: 'row',
@@ -238,7 +238,7 @@ const styles = StyleSheet.create({
   },
   rowText: {
     flex: 1,
-    fontSize: 16,
+    fontSize: fontSize.heading,
     color: colors.text,
   },
   center: {

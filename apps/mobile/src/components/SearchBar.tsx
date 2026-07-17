@@ -1,6 +1,6 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, spacing } from '../constants/theme';
+import { colors, spacing, fontSize } from '../constants/theme';
 
 type SearchBarProps = {
     onPress: () => void;
@@ -31,7 +31,7 @@ const styles = StyleSheet.create({
         marginBottom: spacing.md,
     },
     placeholder: {
-        fontSize: 16,
+        fontSize: fontSize.heading,
         color: colors.textMuted,
     },
 });

@@ -1,6 +1,6 @@
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, spacing } from '../constants/theme';
+import { colors, spacing, fontSize, fontWeight } from '../constants/theme';
 
 type Props = {
   icon: keyof typeof Ionicons.glyphMap;
@@ -46,7 +46,7 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xl,
   },
   message: {
-    fontSize: 16,
+    fontSize: fontSize.heading,
     color: colors.textMuted,
     textAlign: 'center',
   },
@@ -58,8 +58,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary,
   },
   buttonText: {
-    fontSize: 15,
-    fontWeight: '600',
+    fontSize: fontSize.body,
+    fontWeight: fontWeight.semibold,
     color: colors.background, // primary üstünde beyaz
   },
 });

@@ -15,7 +15,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { collectionService } from '../../../lib/collections/collectionService';
 import { artworkService } from '../../../lib/artworks/artworkService';
 import { CreateCollectionModal } from '../../../components/CreateCollectionModal';
-import { colors, spacing } from '../../../constants/theme';
+import { colors, spacing, fontSize, fontWeight } from '../../../constants/theme';
 import { EmptyState } from '../../../components/EmptyState';
 
 
@@ -215,8 +215,8 @@ const styles = StyleSheet.create({
         paddingVertical: spacing.md,
     },
     headerTitle: {
-        fontSize: 22,
-        fontWeight: '700',
+        fontSize: fontSize.title,
+        fontWeight: fontWeight.bold,
         color: colors.text,
     },
     newBtn: {
@@ -228,8 +228,8 @@ const styles = StyleSheet.create({
     },
     newBtnText: {
         color: colors.primary,
-        fontSize: 15,
-        fontWeight: '600',
+        fontSize: fontSize.body,
+        fontWeight: fontWeight.semibold,
     },
     listContent: {
         paddingHorizontal: spacing.md,
@@ -258,18 +258,18 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     rowTitle: {
-        fontSize: 16,
-        fontWeight: '600',
+        fontSize: fontSize.heading,
+        fontWeight: fontWeight.semibold,
         color: colors.text,
     },
     rowCount: {
-        fontSize: 13,
+        fontSize: fontSize.caption,
         color: colors.textMuted,
         marginTop: 2,
     },
     errorText: {
         color: colors.danger,
-        fontSize: 15,
+        fontSize: fontSize.body,
         marginBottom: spacing.md,
     },
     retryBtn: {
@@ -280,6 +280,6 @@ const styles = StyleSheet.create({
     },
     retryText: {
         color: colors.background,
-        fontWeight: '600',
+        fontWeight: fontWeight.semibold,
     },
 });

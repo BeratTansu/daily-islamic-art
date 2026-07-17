@@ -21,7 +21,7 @@ import {
 import { useLike } from '../../../lib/artworks/useLike';
 import { useLikeContext } from '../../../context/LikeContext';
 import { LikeButton } from '../../../components/LikeButton';
-import { colors, spacing } from '../../../constants/theme';
+import { colors, spacing, fontSize, fontWeight } from '../../../constants/theme';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { EmptyState } from '../../../components/EmptyState';
 import { ErrorState } from '../../../components/ErrorState';
@@ -319,8 +319,8 @@ const styles = StyleSheet.create({
     },
     dailyLabel: {
         color: colors.textMuted,
-        fontSize: 13,
-        fontWeight: '600',
+        fontSize: fontSize.caption,
+        fontWeight: fontWeight.semibold,
         textTransform: 'uppercase',
         letterSpacing: 1,
         marginBottom: spacing.sm,
@@ -364,8 +364,8 @@ const styles = StyleSheet.create({
         marginRight: spacing.sm,
     },
     cardArtist: {
-        fontSize: 16,
-        fontWeight: '600',
+        fontSize: fontSize.heading,
+        fontWeight: fontWeight.semibold,
         color: colors.text,
     },
     // Durumlar
@@ -374,11 +374,11 @@ const styles = StyleSheet.create({
     },
     emptyText: {
         color: colors.textMuted,
-        fontSize: 15,
+        fontSize: fontSize.body,
     },
     errorText: {
         color: colors.danger,
-        fontSize: 15,
+        fontSize: fontSize.body,
         marginBottom: spacing.md,
     },
     retryBtn: {
@@ -389,6 +389,6 @@ const styles = StyleSheet.create({
     },
     retryText: {
         color: colors.background,
-        fontWeight: '600',
+        fontWeight: fontWeight.semibold,
     },
 });

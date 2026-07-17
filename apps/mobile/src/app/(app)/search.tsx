@@ -13,7 +13,7 @@ import { ArtworkGrid } from '../../components/ArtworkGrid';
 import { artworkService } from '../../lib/artworks/artworkService';
 import type { ArtworkListItem } from '../../lib/artworks/artworkService';
 import { useDebounce } from '../../lib/hooks/useDebounce';
-import { colors, spacing } from '../../constants/theme';
+import { colors, spacing, fontSize } from '../../constants/theme';
 import { useNavigationGuard } from '../../lib/hooks/useNavigationGuard';
 import { EmptyState } from '../../components/EmptyState';
 import { ErrorState } from '../../components/ErrorState';
@@ -146,7 +146,7 @@ const styles = StyleSheet.create({
     },
     input: {
         flex: 1,
-        fontSize: 16,
+        fontSize: fontSize.heading,
         color: colors.text,
     },
     center: {

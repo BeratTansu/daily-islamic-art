@@ -10,7 +10,7 @@ import {
     KeyboardAvoidingView,
     Platform,
 } from 'react-native';
-import { colors, spacing } from '../constants/theme';
+import { colors, spacing, fontSize, fontWeight } from '../constants/theme';
 
 type CreateCollectionModalProps = {
     visible: boolean;
@@ -128,8 +128,8 @@ const styles = StyleSheet.create({
         borderColor: colors.border,
     },
     title: {
-        fontSize: 18,
-        fontWeight: '600',
+        fontSize: fontSize.subheading,
+        fontWeight: fontWeight.semibold,
         color: colors.text,
         marginBottom: spacing.md,
     },
@@ -139,13 +139,13 @@ const styles = StyleSheet.create({
         borderRadius: 10,
         paddingHorizontal: spacing.md,
         paddingVertical: spacing.sm,
-        fontSize: 16,
+        fontSize: fontSize.heading,
         color: colors.text,
         backgroundColor: colors.background,
     },
     error: {
         color: colors.danger,
-        fontSize: 13,
+        fontSize: fontSize.caption,
         marginTop: spacing.sm,
     },
     actions: {
@@ -161,8 +161,8 @@ const styles = StyleSheet.create({
     },
     cancelText: {
         color: colors.textMuted,
-        fontSize: 15,
-        fontWeight: '600',
+        fontSize: fontSize.body,
+        fontWeight: fontWeight.semibold,
     },
     createBtn: {
         backgroundColor: colors.primary,
@@ -177,7 +177,7 @@ const styles = StyleSheet.create({
     },
     createText: {
         color: colors.background,
-        fontSize: 15,
-        fontWeight: '600',
+        fontSize: fontSize.body,
+        fontWeight: fontWeight.semibold,
     },
 });

@@ -21,7 +21,7 @@ import { useLike } from '../../../lib/artworks/useLike';
 import { useLikeContext } from '../../../context/LikeContext';
 import { LikeButton } from '../../../components/LikeButton';
 import { SaveToCollectionSheet } from '../../../components/SaveToCollectionSheet';
-import { colors, spacing } from '../../../constants/theme';
+import { colors, spacing, fontSize, fontWeight } from '../../../constants/theme';
 import { ActionSheet } from '../../../components/ActionSheet';
 import { downloadImageToGallery } from '../../../lib/media/downloadImage';
 
@@ -144,16 +144,16 @@ export default function ArtworkDetailScreen() {
   return (
     <>
       {/* 4. Üç nokta butonu — Stack.Screen headerRight içerisine yerleştirildi */}
-      <Stack.Screen 
-        options={{ 
-          title: artwork.contributors ?? artwork.artist.name, 
+      <Stack.Screen
+        options={{
+          title: artwork.contributors ?? artwork.artist.name,
           headerShown: true,
           headerRight: () => (
             <Pressable onPress={() => setMenuVisible(true)} hitSlop={8} style={{ marginRight: spacing.sm }}>
               <Ionicons name="ellipsis-horizontal" size={24} color={colors.text} />
             </Pressable>
           ),
-        }} 
+        }}
       />
       <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
         <Image source={{ uri: artwork.imageUrl }} style={styles.image} resizeMode="contain" />
@@ -289,8 +289,8 @@ const styles = StyleSheet.create({
   },
   title: {
     color: colors.text,
-    fontSize: 24,
-    fontWeight: '700',
+    fontSize: fontSize.title,
+    fontWeight: fontWeight.bold,
     flex: 1,
     marginRight: spacing.md,
   },
@@ -319,18 +319,18 @@ const styles = StyleSheet.create({
   },
   translation: {
     color: colors.text,
-    fontSize: 15,
+    fontSize: fontSize.body,
     fontStyle: 'italic',
     lineHeight: 22,
     marginBottom: spacing.xs,
   },
   sourceRef: {
     color: colors.textMuted,
-    fontSize: 13,
+    fontSize: fontSize.caption,
   },
   description: {
     color: colors.text,
-    fontSize: 15,
+    fontSize: fontSize.body,
     lineHeight: 22,
     marginBottom: spacing.lg,
   },
@@ -346,19 +346,19 @@ const styles = StyleSheet.create({
   },
   metaLabel: {
     color: colors.textMuted,
-    fontSize: 14,
+    fontSize: fontSize.secondary,
   },
   metaValue: {
     color: colors.text,
-    fontSize: 14,
-    fontWeight: '500',
+    fontSize: fontSize.secondary,
+    fontWeight: fontWeight.medium,
     flexShrink: 1,
     textAlign: 'right',
     marginLeft: spacing.md,
   },
   errorText: {
     color: colors.danger,
-    fontSize: 15,
+    fontSize: fontSize.body,
     marginBottom: spacing.md,
   },
   retryBtn: {
@@ -369,11 +369,11 @@ const styles = StyleSheet.create({
   },
   retryText: {
     color: colors.background,
-    fontWeight: '600',
+    fontWeight: fontWeight.semibold,
   },
   transcription: {
     color: colors.text,
-    fontSize: 15,
+    fontSize: fontSize.body,
     lineHeight: 24,
     marginBottom: spacing.sm,
   },

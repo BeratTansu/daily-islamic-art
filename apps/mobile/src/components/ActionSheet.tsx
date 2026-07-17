@@ -8,7 +8,7 @@ import {
   } from 'react-native';
   import { Ionicons } from '@expo/vector-icons';
   import { useSafeAreaInsets } from 'react-native-safe-area-context';
-  import { colors, spacing } from '../constants/theme';
+  import { colors, spacing, fontSize } from '../constants/theme';
   
   export type ActionSheetItem = {
     icon: keyof typeof Ionicons.glyphMap;
@@ -91,7 +91,7 @@ import {
       paddingVertical: spacing.md,
     },
     label: {
-      fontSize: 16,
+      fontSize: fontSize.heading,
       color: colors.text,
     },
   });

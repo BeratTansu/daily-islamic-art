@@ -13,7 +13,7 @@ import { useAuth } from '../../../context/AuthContext';
 import { AuthService, type AuthUser } from '../../../lib/auth/authService';
 import { artworkService } from '../../../lib/artworks/artworkService';
 import { collectionService } from '../../../lib/collections/collectionService';
-import { colors, spacing } from '../../../constants/theme';
+import { colors, spacing, fontSize, fontWeight } from '../../../constants/theme';
 
 export default function Profile() {
     const { signOut } = useAuth();
@@ -143,12 +143,12 @@ const styles = StyleSheet.create({
         color: '#fff',
     },
     name: {
-        fontSize: 22,
-        fontWeight: '700',
+        fontSize: fontSize.title,
+        fontWeight: fontWeight.bold,
         color: colors.text,
     },
     email: {
-        fontSize: 15,
+        fontSize: fontSize.body,
         color: colors.textMuted,
         marginTop: spacing.xs,
     },
@@ -163,12 +163,12 @@ const styles = StyleSheet.create({
         minWidth: 80,
     },
     statNumber: {
-        fontSize: 24,
-        fontWeight: '700',
+        fontSize: fontSize.title,
+        fontWeight: fontWeight.bold,
         color: colors.text,
     },
     statLabel: {
-        fontSize: 13,
+        fontSize: fontSize.caption,
         color: colors.textMuted,
         marginTop: spacing.xs,
     },
@@ -190,12 +190,12 @@ const styles = StyleSheet.create({
     buttonDisabled: { opacity: 0.6 },
     signOutText: {
         color: colors.danger,
-        fontSize: 16,
-        fontWeight: '600',
+        fontSize: fontSize.heading,
+        fontWeight: fontWeight.semibold,
     },
     version: {
         textAlign: 'center',
-        fontSize: 13,
+        fontSize: fontSize.caption,
         color: colors.textMuted,
     },
 });
