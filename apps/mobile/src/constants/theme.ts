@@ -5,14 +5,25 @@
  */
 
 export const colors = {
-  background: '#FFFFFF',
-  surface: '#F5F5F5',
-  text: '#1A1A1A',
-  textMuted: '#6B7280',
-  primary: '#1B6B5C',   // geçici — DIA ana rengi, İslam sanatına uygun bir ton seç
-  border: '#E5E7EB',
-  danger: '#DC2626',
-  like: '#DC2626',   // beğenili kalp
+  // ── Zemin ──
+  background: '#F5EDE1',   // ana krem/kağıt zemin (referans: tezhip kağıdı)
+  surface: '#FBF4EA',      // kart/panel — zeminden bir tık açık, sıcak beyaz
+
+  // ── Metin ──
+  text: '#2A2620',         // koyu kahve-siyah (saf siyah değil, kağıda oturur)
+  textMuted: '#6B6357',    // kısık kahve — ikincil metin
+
+  // ── Marka / aksiyon ──
+  primary: '#324130',      // koyu zeytin yeşil (mühür/logo yeşili)
+  primaryDeep: '#26301F',  // daha koyu yeşil — buton zemini / vurgu başlık
+  accent: '#A8916B',       // altın/bronz — SADECE dekor (çizgi, ikon, motif). Metin DEĞİL.
+
+  // ── Yapı ──
+  border: '#E3D5C3',       // krem zemine uyumlu sıcak hairline (soğuk gri gitti)
+
+  // ── Semantic (kimlik dışı, bilinçli korundu) ──
+  danger: '#DC2626',       // çıkış/silme — evrensel kırmızı, paletten muaf
+  like: '#B03A2E',         // beğeni kalbi — kırmızı ama toprak tonuna çekildi, kremle çakışmaz
 } as const;
 
 export const spacing = {

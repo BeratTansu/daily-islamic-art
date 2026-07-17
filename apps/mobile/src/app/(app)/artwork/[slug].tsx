@@ -148,6 +148,9 @@ export default function ArtworkDetailScreen() {
         options={{
           title: artwork.contributors ?? artwork.artist.name,
           headerShown: true,
+          headerTintColor: colors.text,
+          headerStyle: { backgroundColor: colors.background },
+          headerShadowVisible: false,
           headerRight: () => (
             <Pressable onPress={() => setMenuVisible(true)} hitSlop={8} style={{ marginRight: spacing.sm }}>
               <Ionicons name="ellipsis-horizontal" size={24} color={colors.text} />
