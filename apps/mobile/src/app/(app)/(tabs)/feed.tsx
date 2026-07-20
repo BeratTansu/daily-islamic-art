@@ -17,6 +17,7 @@ import {
     artworkService,
     ArtworkListItem,
     ArtworkDetail,
+    ArtworkSort,
 } from '../../../lib/artworks/artworkService';
 import { useLike } from '../../../lib/artworks/useLike';
 import { useLikeContext } from '../../../context/LikeContext';
@@ -39,12 +40,20 @@ export default function FeedScreen() {
     const [error, setError] = useState<string | null>(null);
 
     const [daily, setDaily] = useState<ArtworkDetail | null>(null);
+    const [sort, setSort] = useState<ArtworkSort>('newest'); // oturumluk — acilista hep newest
 
     // --- Feed ilk sayfa / yenileme ---
-    const loadFirstPage = useCallback(async (refresh = false) => {
+    // sort parametre olarak gelir (state'ten degil) → useCallback dependency temiz kalir,
+    // sort degisince loadFirstPage yeniden yaratilmaz. newest ise gonderilmez (cache tekilligi).
+    const loadFirstPage = useCallback(async (sortArg: ArtworkSort, refresh = false) => {
         setError(null);
         try {
-            const res = await artworkService.list({ page: 1, limit: PAGE_LIMIT, refresh });
+            const res = await artworkService.list({
+                page: 1,
+                limit: PAGE_LIMIT,
+                refresh,
+                ...(sortArg !== 'newest' && { sort: sortArg }),
+            });
             setItems(res.items);
             setPage(res.meta.page);
             setHasMore(res.meta.page < res.meta.pages);
@@ -73,7 +82,8 @@ export default function FeedScreen() {
         let active = true;
         (async () => {
             setLoading(true);
-            await Promise.all([loadFirstPage(), loadDaily()]);
+            // Acilista hep newest (sort state default 'newest').
+            await Promise.all([loadFirstPage('newest'), loadDaily()]);
             if (active) setLoading(false);
         })();
         return () => {
@@ -86,12 +96,11 @@ export default function FeedScreen() {
     const onRefresh = useCallback(async () => {
         setRefreshing(true);
         // refresh: true → backend cache'i baypas eder, taze likeCount + daily gelir.
-        // clearLikeOverrides ile birlikte: hem sunucu tazesi hem override sifir →
-        // ekran backend'in tam dogru halini gosterir (stale likeCount sorunu biter).
-        await Promise.all([loadFirstPage(true), loadDaily(true)]);
+        // Mevcut sort korunur (kullanici mostLiked'dayken refresh newest'e atmasin).
+        await Promise.all([loadFirstPage(sort, true), loadDaily(true)]);
         clearLikeOverrides();
         setRefreshing(false);
-    }, [loadFirstPage, loadDaily, clearLikeOverrides]);
+    }, [loadFirstPage, loadDaily, clearLikeOverrides, sort]);
 
     // Sonsuz kaydırma — çift-fetch guard'lı
     const loadMore = useCallback(async () => {
@@ -99,7 +108,11 @@ export default function FeedScreen() {
         setLoadingMore(true);
         try {
             const next = page + 1;
-            const res = await artworkService.list({ page: next, limit: PAGE_LIMIT });
+            const res = await artworkService.list({
+                page: next,
+                limit: PAGE_LIMIT,
+                ...(sort !== 'newest' && { sort }),
+            });
             setItems((prev) => [...prev, ...res.items]);
             setPage(res.meta.page);
             setHasMore(res.meta.page < res.meta.pages);
@@ -108,11 +121,24 @@ export default function FeedScreen() {
         } finally {
             setLoadingMore(false);
         }
-    }, [loadingMore, hasMore, loading, page]);
+    }, [loadingMore, hasMore, loading, page, sort]);
 
     const goToDetail = useCallback((slug: string) => {
         router.push({ pathname: '/artwork/[slug]', params: { slug } });
     }, []);
+
+    // Chip'e basinca: ayni sort'a tekrar basmak no-op, farkliysa liste bastan yuklenir.
+    const handleSortChange = useCallback(
+        async (next: ArtworkSort) => {
+            if (next === sort) return; // ayni sort → bir sey yapma
+            setSort(next);
+            setLoading(true); // liste komple degisiyor → tam loading (alt spinner degil)
+            await loadFirstPage(next);
+            clearLikeOverrides(); // yeni liste → eski override'lar alakasiz
+            setLoading(false);
+        },
+        [sort, loadFirstPage, clearLikeOverrides],
+    );
 
     // Hook'lar erken return'lerin ÜSTÜNDE olmalı (Rules of Hooks).
     // Aşağıdaki `if (loading) return` bu useCallback'i atlarsa hook sırası bozulur.
@@ -165,6 +191,7 @@ export default function FeedScreen() {
                     <View style={styles.dividerLine} />
                 </View>
             )}
+            <SortChips value={sort} onChange={handleSortChange} />
         </View>
     );
 
@@ -220,7 +247,40 @@ function LikeMeta({
     );
 }
 
-// Görsel jesti: çift dokunma → beğen (asla kaldırmaz), tek dokunma → detay.
+// Feed siralama chip'leri. Sadece feed listesini siralar (daily bagimsiz).
+// Secili chip dolu (accent), digerleri cizgili. 3 sabit secenek.
+const SORT_OPTIONS: { value: ArtworkSort; label: string }[] = [
+    { value: 'newest', label: 'En Yeni' },
+    { value: 'oldest', label: 'En Eski' },
+    { value: 'mostLiked', label: 'En Beğenilen' },
+];
+
+function SortChips({
+    value,
+    onChange,
+}: {
+    value: ArtworkSort;
+    onChange: (next: ArtworkSort) => void;
+}) {
+    return (
+        <View style={styles.chipRow}>
+            {SORT_OPTIONS.map((opt) => {
+                const active = opt.value === value;
+                return (
+                    <Pressable
+                        key={opt.value}
+                        onPress={() => onChange(opt.value)}
+                        style={[styles.chip, active && styles.chipActive]}
+                    >
+                        <Text style={[styles.chipText, active && styles.chipTextActive]}>
+                            {opt.label}
+                        </Text>
+                    </Pressable>
+                );
+            })}
+        </View>
+    );
+}
 
 // Görsel jesti: çift dokunma → beğen (asla kaldırmaz), tek dokunma → detay.
 // Exclusive: önce doubleTap denenir, ~200ms içinde ikinci dokunuş gelmezse singleTap.
@@ -406,6 +466,31 @@ const styles = StyleSheet.create({
         width: '100%',
         aspectRatio: 4 / 3,
         backgroundColor: colors.surface,
+    },
+    // Sort chip'leri
+    chipRow: {
+        flexDirection: 'row',
+        gap: spacing.sm,
+        marginBottom: spacing.md,
+    },
+    chip: {
+        paddingHorizontal: spacing.md,
+        paddingVertical: spacing.xs,
+        borderRadius: 20,
+        borderWidth: 1,
+        borderColor: colors.border,
+        backgroundColor: colors.surface,
+    },
+    chipActive: {
+        backgroundColor: colors.primary,
+        borderColor: colors.primary,
+    },
+    chipText: {
+        fontSize: fontSize.caption,
+        color: colors.textMuted,
+    },
+    chipTextActive: {
+        color: colors.background,
     },
     // Kart
     card: {

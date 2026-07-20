@@ -5,7 +5,7 @@ import { Prisma, Artwork, Artist } from '@dia/database/generated/client/index.js
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateArtworkDto } from './dto/create-artwork.dto';
 import { UpdateArtworkDto } from './dto/update-artwork.dto';
-import { QueryArtworkDto } from './dto/query-artwork.dto';
+import { QueryArtworkDto, ArtworkSort } from './dto/query-artwork.dto';
 import { RedisService } from '../redis/redis.service';
 import { QueryAdminArtworkDto } from './dto/query-admin-artwork.dto';
 import { QueryLikedDto } from './dto/query-liked.dto';
@@ -108,7 +108,7 @@ export class ArtworkService {
     }
 
     async findAll(query: QueryArtworkDto, userId: string): Promise<FeedResult> {
-        const { page = 1, limit = 20, type, script, artistId, q, refresh } = query;
+        const { page = 1, limit = 20, type, script, artistId, q, refresh, sort } = query;
         const cacheable = !q;
         const cacheKey = this.buildFeedKey(query);
         // refresh=true: kullanici bilerek taze veri istedi (pull-to-refresh) →
@@ -142,7 +142,7 @@ export class ArtworkService {
                     artist: { select: { id: true, name: true, slug: true } },
                     _count: { select: { likes: true } },
                 },
-                orderBy: { createdAt: 'desc' },
+                orderBy: this.buildOrderBy(sort),
                 skip: (page - 1) * limit,
                 take: limit,
             }),
@@ -465,12 +465,31 @@ export class ArtworkService {
         return Math.floor((endOfDay.getTime() - now.getTime()) / 1000);
     }
 
+    // Sort enum → Prisma orderBy. mostLiked ikincil createdAt ile:
+    // ayni begeni sayisindaki eserler (cogu 0) deterministik siralanir,
+    // yoksa pagination kayar (ayni eser iki sayfada cikabilir).
+    private buildOrderBy(
+        sort?: ArtworkSort,
+    ): Prisma.ArtworkOrderByWithRelationInput | Prisma.ArtworkOrderByWithRelationInput[] {
+        switch (sort) {
+            case ArtworkSort.OLDEST:
+                return { createdAt: 'asc' };
+            case ArtworkSort.MOST_LIKED:
+                return [{ likes: { _count: 'desc' } }, { createdAt: 'desc' }];
+            case ArtworkSort.NEWEST:
+            default:
+                return { createdAt: 'desc' };
+        }
+    }
+
     private buildFeedKey(query: QueryArtworkDto): string {
         // Gelen query boş olsa bile varsayılan değerlerle sabit bir yapı oluşturuyoruz
         const { type = '', script = '', artistId = '', page = 1, limit = 20 } = query;
-
+        // sort key'e GIRER: farkli siralamalar ayni cache'i ezmesin (cache cakismasi).
+        // Default newest → bos string ile ayni davranis (mevcut cache'ler bozulmaz).
+        const sort = query.sort ?? '';
         // Alanlar HEP aynı sırada — deterministik key garantisi
-        return `artworks:feed:type=${type}|script=${script}|artistId=${artistId}|page=${page}|limit=${limit}`;
+        return `artworks:feed:type=${type}|script=${script}|artistId=${artistId}|sort=${sort}|page=${page}|limit=${limit}`;
     }
 
     /** Artwork verisi değişince feed + daily cache'ini temizler. */

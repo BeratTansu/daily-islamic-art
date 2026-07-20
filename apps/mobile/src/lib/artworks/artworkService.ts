@@ -3,6 +3,9 @@ import { ApiClient } from '../auth/apiClient';
 
 export type ArtworkType = 'HAT' | 'TEZHIP' | 'MINYATUR' | 'EBRU' | 'CINI' | 'DIGER';
 
+// Feed siralama secenekleri — backend ArtworkSort enum ile ayni degerler.
+export type ArtworkSort = 'newest' | 'oldest' | 'mostLiked';
+
 // Feed/liste kartı için yeterli alanlar (nested artist dahil)
 export interface ArtworkListItem {
     id: string;
@@ -57,6 +60,7 @@ export interface ListParams {
     artistId?: string;
     q?: string;
     refresh?: boolean; // pull-to-refresh: cache'i baypas et, taze veri iste
+    sort?: ArtworkSort; // siralama; gonderilmezse backend newest kabul eder
 }
 
 // GET /artworks/liked sadece page/limit kabul eder (QueryLikedDto).
@@ -76,6 +80,7 @@ class ArtworkService {
         if (params.artistId) qs.set('artistId', params.artistId);
         if (params.q) qs.set('q', params.q);
         if (params.refresh) qs.set('refresh', 'true'); // sadece true ise gonder
+        if (params.sort) qs.set('sort', params.sort); // newest ise gondermeye gerek yok (backend default)
         const query = qs.toString();
         return ApiClient.get<ArtworkListResponse>(`/artworks${query ? `?${query}` : ''}`);
     }

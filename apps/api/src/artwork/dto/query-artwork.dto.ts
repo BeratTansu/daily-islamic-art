@@ -2,6 +2,14 @@ import { IsBoolean, IsOptional, IsString, IsEnum, IsInt, Min, Max } from 'class-
 import { Type, Transform } from 'class-transformer';
 import { ArtworkType } from '@dia/database/generated/client/index.js';
 
+// Feed siralama secenekleri. Prisma enum'u DEGIL — DB'de sort alani yok,
+// bu bir API sozlesmesi (query param). O yuzden burada tanimli.
+export enum ArtworkSort {
+  NEWEST = 'newest',
+  OLDEST = 'oldest',
+  MOST_LIKED = 'mostLiked',
+}
+
 // Feed/filtre için. Query param'lar string gelir → @Type ile number'a çevir.
 export class QueryArtworkDto {
   @IsOptional() @IsEnum(ArtworkType)
@@ -29,4 +37,9 @@ export class QueryArtworkDto {
   @Transform(({ value }) => value === 'true' ? true : value === 'false' ? false : value)
   @IsBoolean()
   refresh?: boolean;
+
+  // Siralama. Default newest (mevcut davranis) service'te uygulanir.
+  @IsOptional()
+  @IsEnum(ArtworkSort)
+  sort?: ArtworkSort;
 }
