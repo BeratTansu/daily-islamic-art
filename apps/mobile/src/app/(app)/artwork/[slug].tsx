@@ -20,6 +20,7 @@ import {
 import { useLike } from '../../../lib/artworks/useLike';
 import { useLikeContext } from '../../../context/LikeContext';
 import { LikeButton } from '../../../components/LikeButton';
+import { displayLikeCount } from '../../../lib/artworks/likeCount';
 import { SaveToCollectionSheet } from '../../../components/SaveToCollectionSheet';
 import { colors, spacing, fontSize, fontWeight, fontFamily } from '../../../constants/theme';
 import { ActionSheet } from '../../../components/ActionSheet';
@@ -246,8 +247,14 @@ function DetailLikeButton({ artwork }: { artwork: ArtworkDetail }) {
   const { toggle } = useLike();
   const { getIsLiked } = useLikeContext();
   const isLiked = getIsLiked(artwork.id, artwork.isLiked);
+  const count = displayLikeCount(artwork.likeCount, artwork.isLiked, isLiked);
 
-  return <LikeButton isLiked={isLiked} onPress={() => toggle(artwork.id, isLiked)} size={28} />;
+  return (
+    <View style={styles.likeMeta}>
+      <LikeButton isLiked={isLiked} onPress={() => toggle(artwork.id, isLiked)} size={28} />
+      {count > 0 && <Text style={styles.likeCount}>{count}</Text>}
+    </View>
+  );
 }
 
 // Etiketli satır — value null ise hiç render etme
@@ -305,6 +312,15 @@ const styles = StyleSheet.create({
   },
   saveBtn: {
     padding: spacing.xs,
+  },
+  likeMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  likeCount: {
+    fontSize: fontSize.body,
+    color: colors.textMuted,
   },
   textBlock: {
     backgroundColor: colors.surface,

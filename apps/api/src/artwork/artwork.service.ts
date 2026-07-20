@@ -303,16 +303,26 @@ export class ArtworkService {
         const [likes, total] = await this.prisma.$transaction([
             this.prisma.like.findMany({
                 where,
-                include: { artwork: { include: { artist: true } } },
+                include: {
+                    artwork: {
+                        include: {
+                            artist: true,
+                            _count: { select: { likes: true } },
+                        },
+                    },
+                },
                 orderBy: { createdAt: 'desc' }, // Like.createdAt = beğeni tarihi
                 skip,
                 take: limit,
             }),
             this.prisma.like.count({ where }),
         ]);
-
         return {
-            items: likes.map((l) => ({ ...l.artwork, isLiked: true })),
+            // _count → likeCount map (temiz shape), isLiked hep true (liked listesi).
+            items: likes.map((l) => {
+                const { _count, ...artwork } = l.artwork;
+                return { ...artwork, likeCount: _count.likes, isLiked: true };
+            }),
             meta: { page, limit, total, pages: Math.ceil(total / limit) },
         };
     }
