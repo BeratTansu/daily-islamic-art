@@ -40,6 +40,14 @@ export default function Login() {
             behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         >
             <View style={styles.form}>
+                <TouchableOpacity
+                    onPress={() => router.back()}
+                    disabled={submitting}
+                    style={styles.backButton}
+                >
+                    <Text style={styles.backButtonText}>← Geri</Text>
+                </TouchableOpacity>
+
                 <Text style={styles.title}>Daily Islamic Art</Text>
 
                 <TextInput
@@ -79,6 +87,14 @@ export default function Login() {
                         <Text style={styles.buttonText}>Giriş Yap</Text>
                     )}
                 </TouchableOpacity>
+
+                <TouchableOpacity
+                    onPress={() => router.replace('/register')}
+                    disabled={submitting}
+                    style={styles.linkWrapper}
+                >
+                    <Text style={styles.link}>Hesabın yok mu? Kayıt ol</Text>
+                </TouchableOpacity>
             </View>
         </KeyboardAvoidingView>
     );
@@ -111,6 +127,25 @@ const styles = StyleSheet.create({
         backgroundColor: colors.surface,
     },
     error: { color: colors.danger, fontSize: 14 },
+    backButton: {
+        alignSelf: 'flex-start',
+        marginBottom: spacing.sm,
+        paddingVertical: spacing.xs,
+    },
+    backButtonText: {
+        color: colors.textMuted,
+        fontSize: 15,
+        fontWeight: '600',
+    },
+    linkWrapper: {
+        alignItems: 'center',
+        marginTop: spacing.sm,
+    },
+    link: {
+        color: colors.primary,
+        fontSize: 14,
+        fontWeight: '600',
+    },
     button: {
         backgroundColor: colors.primary,
         borderRadius: 8,

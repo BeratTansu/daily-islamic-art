@@ -61,6 +61,14 @@ export default function Register() {
             behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         >
             <View style={styles.form}>
+                <TouchableOpacity
+                    onPress={() => router.back()}
+                    disabled={submitting}
+                    style={styles.backButton}
+                >
+                    <Text style={styles.backButtonText}>← Geri</Text>
+                </TouchableOpacity>
+
                 <Text style={styles.title}>Hesap Oluştur</Text>
 
                 <TextInput
@@ -151,6 +159,16 @@ const styles = StyleSheet.create({
         backgroundColor: colors.surface,
     },
     error: { color: colors.danger, fontSize: 14 },
+    backButton: {
+        alignSelf: 'flex-start',
+        marginBottom: spacing.sm,
+        paddingVertical: spacing.xs,
+    },
+    backButtonText: {
+        color: colors.textMuted,
+        fontSize: 15,
+        fontWeight: '600',
+    },
     button: {
         backgroundColor: colors.primary,
         borderRadius: 8,
