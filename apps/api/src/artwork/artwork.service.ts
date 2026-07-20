@@ -15,7 +15,8 @@ type ArtworkWithArtist = Artwork & { artist: Artist };
 // findAll artist'in sadece 3 alanını seçiyor → tip de onu yansıtsın
 type FeedArtwork = Artwork & {
     artist: Pick<Artist, 'id' | 'name' | 'slug'>;
-    isLiked?: boolean;
+    likeCount: number; // kullanıcıdan bagimsiz → cache'e girer
+    isLiked?: boolean;  // kisisel → cache'ten SONRA enrich
 };
 
 type FeedResult = {
@@ -107,12 +108,13 @@ export class ArtworkService {
     }
 
     async findAll(query: QueryArtworkDto, userId: string): Promise<FeedResult> {
-        const { page = 1, limit = 20, type, script, artistId, q } = query;
-
+        const { page = 1, limit = 20, type, script, artistId, q, refresh } = query;
         const cacheable = !q;
         const cacheKey = this.buildFeedKey(query);
-
-        if (cacheable) {
+        // refresh=true: kullanici bilerek taze veri istedi (pull-to-refresh) →
+        // cache OKUMASINI atla, DB'den taze cek. Cache YAZMASI devam eder (asagida).
+        // refresh buildFeedKey'e GIRMEZ → cache key kirlenmez, ayni key'e taze yazilir.
+        if (cacheable && !refresh) {
             const cached = await this.redis.get<FeedResult>(cacheKey);
             if (cached) {
                 this.logger.log(`feed cache HIT: ${cacheKey}`);
@@ -133,17 +135,24 @@ export class ArtworkService {
             }),
         };
 
-        const [items, total] = await this.prisma.$transaction([
+        const [rawItems, total] = await this.prisma.$transaction([
             this.prisma.artwork.findMany({
                 where,
-                include: { artist: { select: { id: true, name: true, slug: true } } },
+                include: {
+                    artist: { select: { id: true, name: true, slug: true } },
+                    _count: { select: { likes: true } },
+                },
                 orderBy: { createdAt: 'desc' },
                 skip: (page - 1) * limit,
                 take: limit,
             }),
             this.prisma.artwork.count({ where }),
         ]);
-
+        // _count nested objesini temiz likeCount alanina cevir → API sekli temiz kalir
+        const items: FeedArtwork[] = rawItems.map(({ _count, ...artwork }) => ({
+            ...artwork,
+            likeCount: _count.likes,
+        }));
         const result: FeedResult = { items, meta: { page, limit, total, pages: Math.ceil(total / limit) } };
 
         if (cacheable) {
@@ -208,11 +217,14 @@ export class ArtworkService {
     }
 
     // --- GÜN 5: Günün Eseri Mantığı ---
-    async findDaily(userId?: string) {
+    async findDaily(userId?: string, refresh = false) {
         const cacheKey = `artworks:daily:${this.getTodayKey()}`;
-
-        // 1. Önce cache'e bak
-        const cached = await this.redis.get<ArtworkWithArtist>(cacheKey);
+        // refresh=true: pull-to-refresh → cache OKUMASINI atla, taze sec.
+        // Cache YAZMASI devam eder (asagida secondsUntilEndOfDay ile).
+        // 1. Önce cache'e bak (likeCount cache'te — ortak veri, isLiked enrich SONRA)
+        const cached = refresh
+            ? null
+            : await this.redis.get<ArtworkWithArtist & { likeCount: number }>(cacheKey);
         if (cached) {
             this.logger.log(`daily cache HIT: ${cacheKey}`);
             // İki return var (cache HIT + DB) → ikisi de enrich'ten geçmeli.
@@ -224,7 +236,7 @@ export class ArtworkService {
         // --- DÜZELTME BURADA: Tipi açıkça belirttik ---
         // 'any' yerine projenin artwork tipi neyse onu yazabilirsin, 
         // örneğin: 'let artwork: any = null;'
-        let artwork: ArtworkWithArtist | null = null;
+        let artwork: (ArtworkWithArtist & { likeCount: number }) | null = null;
 
         // 1) Bugün manuel olarak featured var mı?
         const startOfToday = new Date();
@@ -238,11 +250,12 @@ export class ArtworkService {
                 featuredAt: { gte: startOfToday, lt: startOfTomorrow },
             },
             orderBy: { featuredAt: 'desc' },
-            include: { artist: true },
+            include: { artist: true, _count: { select: { likes: true } } },
         });
 
         if (manualFeatured) {
-            artwork = manualFeatured; // Artık hata vermeyecek
+            const { _count, ...rest } = manualFeatured;
+            artwork = { ...rest, likeCount: _count.likes };
         } else {
             // 2) Fallback: tarihe göre deterministik seçim
             const total = await this.prisma.artwork.count({
@@ -259,10 +272,13 @@ export class ArtworkService {
                 orderBy: { createdAt: 'asc' },
                 skip: index,
                 take: 1,
-                include: { artist: true },
+                include: { artist: true, _count: { select: { likes: true } } },
             });
 
-            artwork = daily; // Artık hata vermeyecek
+            if (daily) {
+                const { _count, ...rest } = daily;
+                artwork = { ...rest, likeCount: _count.likes };
+            }
         }
 
         // 3. Sonucu cache'e yaz
@@ -304,7 +320,10 @@ export class ArtworkService {
     async findOneBySlug(slug: string, userId: string) {
         const artwork = await this.prisma.artwork.findFirst({
             where: { slug, isPublished: true },
-            include: { artist: true },
+            include: {
+                artist: true,
+                _count: { select: { likes: true } },
+            },
         });
 
         if (!artwork) throw new NotFoundException('Eser bulunamadı');
@@ -314,7 +333,8 @@ export class ArtworkService {
             select: { id: true },
         });
 
-        return { ...artwork, isLiked: !!like };
+        const { _count, ...rest } = artwork;
+        return { ...rest, likeCount: _count.likes, isLiked: !!like };
     }
 
     async findOneBySlugAdmin(slug: string) {

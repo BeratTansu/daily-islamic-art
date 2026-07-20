@@ -21,4 +21,12 @@ export class QueryArtworkDto {
 
   @IsOptional() @Type(() => Number) @IsInt() @Min(1) @Max(50)
   limit?: number = 20;
+
+  // Pull-to-refresh sinyali: true ise cache OKUMASI atlanir, DB'den taze cekilir.
+  // buildFeedKey'e GIRMEZ (key kirlenmesin) — sadece cache-read kararinda kullanilir.
+  // @Type(() => Boolean) YANLIS olur (her string true olur) → elle Transform sart.
+  @IsOptional()
+  @Transform(({ value }) => value === 'true' ? true : value === 'false' ? false : value)
+  @IsBoolean()
+  refresh?: boolean;
 }

@@ -16,6 +16,7 @@ export interface ArtworkListItem {
     // Opsiyonel: feed cache'ine giren obje bu alanı içermez,
     // backend cache'ten SONRA enrich eder (withLikeStatus).
     isLiked?: boolean;
+    likeCount: number; // backend base sayi — override delta gosterimde eklenir
 }
 
 // Detay ekranı için tam alanlar
@@ -55,6 +56,7 @@ export interface ListParams {
     type?: ArtworkType;
     artistId?: string;
     q?: string;
+    refresh?: boolean; // pull-to-refresh: cache'i baypas et, taze veri iste
 }
 
 // GET /artworks/liked sadece page/limit kabul eder (QueryLikedDto).
@@ -73,12 +75,14 @@ class ArtworkService {
         if (params.type) qs.set('type', params.type);
         if (params.artistId) qs.set('artistId', params.artistId);
         if (params.q) qs.set('q', params.q);
+        if (params.refresh) qs.set('refresh', 'true'); // sadece true ise gonder
         const query = qs.toString();
         return ApiClient.get<ArtworkListResponse>(`/artworks${query ? `?${query}` : ''}`);
     }
 
-    async getDaily(): Promise<ArtworkDetail> {
-        return ApiClient.get<ArtworkDetail>('/artworks/daily');
+    async getDaily(refresh = false): Promise<ArtworkDetail> {
+        const query = refresh ? '?refresh=true' : '';
+        return ApiClient.get<ArtworkDetail>(`/artworks/daily${query}`);
     }
 
     async getBySlug(slug: string): Promise<ArtworkDetail> {

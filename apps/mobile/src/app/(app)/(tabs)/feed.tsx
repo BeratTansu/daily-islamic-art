@@ -21,6 +21,7 @@ import {
 import { useLike } from '../../../lib/artworks/useLike';
 import { useLikeContext } from '../../../context/LikeContext';
 import { LikeButton } from '../../../components/LikeButton';
+import { displayLikeCount } from '../../../lib/artworks/likeCount';
 import { colors, spacing, fontSize, fontWeight, fontFamily } from '../../../constants/theme';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { EmptyState } from '../../../components/EmptyState';
@@ -40,10 +41,10 @@ export default function FeedScreen() {
     const [daily, setDaily] = useState<ArtworkDetail | null>(null);
 
     // --- Feed ilk sayfa / yenileme ---
-    const loadFirstPage = useCallback(async () => {
+    const loadFirstPage = useCallback(async (refresh = false) => {
         setError(null);
         try {
-            const res = await artworkService.list({ page: 1, limit: PAGE_LIMIT });
+            const res = await artworkService.list({ page: 1, limit: PAGE_LIMIT, refresh });
             setItems(res.items);
             setPage(res.meta.page);
             setHasMore(res.meta.page < res.meta.pages);
@@ -52,9 +53,9 @@ export default function FeedScreen() {
         }
     }, []);
 
-    const loadDaily = useCallback(async () => {
+    const loadDaily = useCallback(async (refresh = false) => {
         try {
-            const d = await artworkService.getDaily();
+            const d = await artworkService.getDaily(refresh);
             setDaily(d);
         } catch {
             setDaily(null); // daily hata verirse feed çalışmaya devam etsin
@@ -84,9 +85,10 @@ export default function FeedScreen() {
     // Pull-to-refresh
     const onRefresh = useCallback(async () => {
         setRefreshing(true);
-        await Promise.all([loadFirstPage(), loadDaily()]);
-        // Taze veri geldi → override'lar gereksiz. Eski bir kayıt backend'in
-        // doğru cevabını ezmesin (örn. başka cihazdan beğeni kaldırıldıysa).
+        // refresh: true → backend cache'i baypas eder, taze likeCount + daily gelir.
+        // clearLikeOverrides ile birlikte: hem sunucu tazesi hem override sifir →
+        // ekran backend'in tam dogru halini gosterir (stale likeCount sorunu biter).
+        await Promise.all([loadFirstPage(true), loadDaily(true)]);
         clearLikeOverrides();
         setRefreshing(false);
     }, [loadFirstPage, loadDaily, clearLikeOverrides]);
@@ -194,6 +196,32 @@ export default function FeedScreen() {
     );
 }
 
+// Kalp + sagindaki begeni sayisi. Sayi turetilmis (base + override deltasi),
+// 0 ise gizli (ciplak kalp daha temiz). Iki kart da bunu kullanir.
+function LikeMeta({
+    id,
+    baseCount,
+    backendIsLiked,
+    displayIsLiked,
+    onToggleLike,
+}: {
+    id: string;
+    baseCount: number;
+    backendIsLiked: boolean;
+    displayIsLiked: boolean;
+    onToggleLike: (id: string, isLiked: boolean) => void;
+}) {
+    const count = displayLikeCount(baseCount, backendIsLiked, displayIsLiked);
+    return (
+        <View style={styles.likeMeta}>
+            <LikeButton isLiked={displayIsLiked} onPress={() => onToggleLike(id, displayIsLiked)} />
+            {count > 0 && <Text style={styles.likeCount}>{count}</Text>}
+        </View>
+    );
+}
+
+// Görsel jesti: çift dokunma → beğen (asla kaldırmaz), tek dokunma → detay.
+
 // Görsel jesti: çift dokunma → beğen (asla kaldırmaz), tek dokunma → detay.
 // Exclusive: önce doubleTap denenir, ~200ms içinde ikinci dokunuş gelmezse singleTap.
 // Bedeli: tek dokunuşta ~200ms navigasyon gecikmesi. Gün 17'de hissiyat değerlendirilecek.
@@ -261,7 +289,13 @@ function DailyCard({
                             {daily.artist.name}
                         </Text>
                     </Pressable>
-                    <LikeButton isLiked={isLiked} onPress={() => onToggleLike(daily.id, isLiked)} />
+                    <LikeMeta
+                        id={daily.id}
+                        baseCount={daily.likeCount}
+                        backendIsLiked={daily.isLiked}
+                        displayIsLiked={isLiked}
+                        onToggleLike={onToggleLike}
+                    />
                 </View>
             </View>
         </View>
@@ -301,7 +335,13 @@ function ArtworkCard({
                         {item.artist.name}
                     </Text>
                 </Pressable>
-                <LikeButton isLiked={isLiked} onPress={() => onToggleLike(item.id, isLiked)} />
+                <LikeMeta
+                    id={item.id}
+                    baseCount={item.likeCount}
+                    backendIsLiked={item.isLiked ?? false}
+                    displayIsLiked={isLiked}
+                    onToggleLike={onToggleLike}
+                />
             </View>
         </View>
     );
@@ -392,6 +432,16 @@ const styles = StyleSheet.create({
     metaText: {
         flex: 1,
         marginRight: spacing.sm,
+    },
+    likeMeta: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: spacing.xs,
+    },
+    likeCount: {
+        fontSize: fontSize.caption,
+        color: colors.textMuted,
+        // fontWeight yok — fontFamily kullanmiyoruz, sistem fontu default agirlikta.
     },
     cardArtist: {
         fontSize: fontSize.heading,

@@ -17,7 +17,7 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { Role } from '@dia/database/generated/client/index.js';
 import { PublishArtworkDto } from './dto/publish-artwork.dto';
 import { QueryAdminArtworkDto } from './dto/query-admin-artwork.dto';
-import type { AuthenticatedRequest, OptionalAuthRequest } from '../auth/types/authenticated-request'; 
+import type { AuthenticatedRequest, OptionalAuthRequest } from '../auth/types/authenticated-request';
 import { QueryLikedDto } from './dto/query-liked.dto';
 import { OptionalJwtAuthGuard } from '../auth/guards/optional-jwt-auth.guard';
 
@@ -41,8 +41,12 @@ export class ArtworkController {
     // çalışmaz, token gönderilse bile req.user boş kalırdı.
     @Get('daily')
     @UseGuards(OptionalJwtAuthGuard)
-    findDaily(@Req() req: OptionalAuthRequest) {
-        return this.artworkService.findDaily(req.user?.id);
+    findDaily(
+        @Query('refresh') refresh: string,
+        @Req() req: OptionalAuthRequest,
+    ) {
+        // daily basit query param — DTO yok. String gelir, elle 'true' kontrolu.
+        return this.artworkService.findDaily(req.user?.id, refresh === 'true');
     }
 
     @Get('admin')
