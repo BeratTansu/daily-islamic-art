@@ -26,8 +26,14 @@ export class CollectionService {
       select: {
         id: true,
         name: true,
-        _count: { select: { items: true } },
+        // itemCount da SADECE yayindakileri saysin — liste "2 eser" deyip
+        // ici 1 gostermesin (menu yalan soylemesin). findOne ile ayni filtre.
+        _count: {
+          select: { items: { where: { artwork: { isPublished: true } } } },
+        },
         items: {
+          // Kapak da yayindaki eserden gelsin (kalkan esere denk gelmesin).
+          where: { artwork: { isPublished: true } },
           take: 1,
           orderBy: { addedAt: 'desc' },
           select: {
@@ -56,8 +62,12 @@ export class CollectionService {
         select: {
           id: true,
           name: true,
-          _count: { select: { items: true } },
+          // findAll ile ayni: sayim ve kapak sadece yayindaki eserden.
+          _count: {
+            select: { items: { where: { artwork: { isPublished: true } } } },
+          },
           items: {
+            where: { artwork: { isPublished: true } },
             take: 1,
             orderBy: { addedAt: 'desc' },
             select: {
@@ -97,6 +107,10 @@ export class CollectionService {
         name: true,
         createdAt: true,
         items: {
+          // Yayindan kalkan eser koleksiyonda GORUNMEZ (Begendiklerim ile ayni
+          // davranis). CollectionItem kaydi DB'de DURUR — eser tekrar yayina
+          // girerse geri gelir. Veri silinmez, sadece gorunurluk filtresi.
+          where: { artwork: { isPublished: true } },
           orderBy: { addedAt: 'desc' },
           select: {
             addedAt: true,
