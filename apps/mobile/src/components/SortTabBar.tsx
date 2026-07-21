@@ -8,7 +8,7 @@ import Animated, {
 import type { TabBarProps } from 'react-native-collapsible-tab-view';
 import { colors, spacing, fontSize, fontWeight } from '../constants/theme';
 
-const TAB_COUNT = 3;
+const TAB_COUNT = 4;
 
 export function SortTabBar({
     indexDecimal,
@@ -65,11 +65,11 @@ export function SortTabBar({
 
 // Sekme adi → gorunen etiket. feed.tsx'teki Tab name'leriyle BIREBIR eslesmeli.
 const LABELS: Record<string, string> = {
+    discover: 'Keşfet',
     mostLiked: 'En Beğenilen',
     newest: 'En Yeni',
     oldest: 'En Eski',
 };
-
 // Etiket rengi indexDecimal'e gore interpolate — aktife yaklastikca
 // textMuted'tan primary'ye gecer. Boylece renk de smooth akar.
 function TabLabel({

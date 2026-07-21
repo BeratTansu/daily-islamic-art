@@ -29,6 +29,7 @@ import { useLikeContext } from '../../../context/LikeContext';
 import { LikeButton } from '../../../components/LikeButton';
 import { displayLikeCount } from '../../../lib/artworks/likeCount';
 import { FeedPage } from '../../../components/FeedPage';
+import { DiscoverPage } from '../../../components/DiscoverPage';
 import { colors, spacing, fontSize, fontWeight, fontFamily } from '../../../constants/theme';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -102,11 +103,14 @@ export default function FeedScreen() {
             <Tabs.Container
                 renderHeader={renderHeader}
                 renderTabBar={(props) => <SortTabBar {...props} />}
-                initialTabName="newest"
+                initialTabName="discover"
                 lazy
                 minHeaderHeight={HEADER_MIN}
                 headerContainerStyle={styles.headerContainer}
             >
+                <Tabs.Tab name="discover" label="Keşfet">
+                    <DiscoverPage onDailyRefresh={onDailyRefresh} />
+                </Tabs.Tab>
                 <Tabs.Tab name="mostLiked" label="En Beğenilen">
                     <FeedPage sort="mostLiked" onDailyRefresh={onDailyRefresh} />
                 </Tabs.Tab>

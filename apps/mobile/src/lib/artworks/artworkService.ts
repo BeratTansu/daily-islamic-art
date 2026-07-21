@@ -4,7 +4,8 @@ import { ApiClient } from '../auth/apiClient';
 export type ArtworkType = 'HAT' | 'TEZHIP' | 'MINYATUR' | 'EBRU' | 'CINI' | 'DIGER';
 
 // Feed siralama secenekleri — backend ArtworkSort enum ile ayni degerler.
-export type ArtworkSort = 'newest' | 'oldest' | 'mostLiked';
+// shuffle: Kesfet sekmesi (seed'li deterministik random). seed ile birlikte anlamli.
+export type ArtworkSort = 'newest' | 'oldest' | 'mostLiked' | 'shuffle';
 
 // Feed/liste kartı için yeterli alanlar (nested artist dahil)
 export interface ArtworkListItem {
@@ -61,6 +62,7 @@ export interface ListParams {
     q?: string;
     refresh?: boolean; // pull-to-refresh: cache'i baypas et, taze veri iste
     sort?: ArtworkSort; // siralama; gonderilmezse backend newest kabul eder
+    seed?: number; // SADECE sort=shuffle ile. Kesfet oturum/refresh basi uretir.
 }
 
 // GET /artworks/liked sadece page/limit kabul eder (QueryLikedDto).
@@ -81,6 +83,8 @@ class ArtworkService {
         if (params.q) qs.set('q', params.q);
         if (params.refresh) qs.set('refresh', 'true'); // sadece true ise gonder
         if (params.sort) qs.set('sort', params.sort); // newest ise gondermeye gerek yok (backend default)
+        // seed: 0 gecerli bir seed olabilir → !== undefined kontrolu (truthy DEGIL).
+        if (params.seed !== undefined) qs.set('seed', String(params.seed));
         const query = qs.toString();
         return ApiClient.get<ArtworkListResponse>(`/artworks${query ? `?${query}` : ''}`);
     }
