@@ -512,14 +512,18 @@ export class ArtworkService {
     private buildOrderBy(
         sort?: ArtworkSort,
     ): Prisma.ArtworkOrderByWithRelationInput | Prisma.ArtworkOrderByWithRelationInput[] {
+        // Her sort SON anahtar olarak id alir: id (cuid) benzersiz → deterministik
+        // TOPLAM sira. createdAt/likeCount esit kayitlar (ayni ms import, ayni begeni)
+        // sayfa sinirinda kaymaz → ayni eser iki sayfada cikmaz. Frontend dedup
+        // guard'ini gereksiz kilar (guard yine de zararsiz, kalabilir).
         switch (sort) {
             case ArtworkSort.OLDEST:
-                return { createdAt: 'asc' };
+                return [{ createdAt: 'asc' }, { id: 'asc' }];
             case ArtworkSort.MOST_LIKED:
-                return [{ likes: { _count: 'desc' } }, { createdAt: 'desc' }];
+                return [{ likes: { _count: 'desc' } }, { createdAt: 'desc' }, { id: 'desc' }];
             case ArtworkSort.NEWEST:
             default:
-                return { createdAt: 'desc' };
+                return [{ createdAt: 'desc' }, { id: 'desc' }];
         }
     }
 
