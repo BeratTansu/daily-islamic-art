@@ -18,6 +18,7 @@ import Animated, {
 import { Tabs, useHeaderMeasurements } from 'react-native-collapsible-tab-view';
 import { router } from 'expo-router';
 import { SearchBar } from '../../../components/SearchBar';
+import { SortTabBar } from '../../../components/SortTabBar';
 import {
     artworkService,
     ArtworkDetail,
@@ -100,6 +101,7 @@ export default function FeedScreen() {
         <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['top']}>
             <Tabs.Container
                 renderHeader={renderHeader}
+                renderTabBar={(props) => <SortTabBar {...props} />}
                 initialTabName="newest"
                 lazy
                 minHeaderHeight={HEADER_MIN}
