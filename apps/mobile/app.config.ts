@@ -8,9 +8,6 @@ const config: ExpoConfig = {
   icon: './assets/images/icon.png',
   scheme: 'mobile',
   userInterfaceStyle: 'automatic',
-  ios: {
-    icon: './assets/expo.icon',
-  },
   android: {
     package: 'app.dia.mobile',
     adaptiveIcon: {
