@@ -9,6 +9,7 @@ import { QueryArtworkDto, ArtworkSort } from './dto/query-artwork.dto';
 import { RedisService } from '../redis/redis.service';
 import { QueryAdminArtworkDto } from './dto/query-admin-artwork.dto';
 import { QueryLikedDto } from './dto/query-liked.dto';
+import { BadRequestException } from '@nestjs/common';
 
 type ArtworkWithArtist = Artwork & { artist: Artist };
 
@@ -135,19 +136,59 @@ export class ArtworkService {
             }),
         };
 
-        const [rawItems, total] = await this.prisma.$transaction([
-            this.prisma.artwork.findMany({
-                where,
+        let rawItems: Array<Prisma.ArtworkGetPayload<{
+            include: {
+                artist: { select: { id: true; name: true; slug: true } };
+                _count: { select: { likes: true } };
+            };
+        }>>;
+        let total: number;
+
+        if (sort === ArtworkSort.SHUFFLE) {
+            // Shuffle: seed zorunlu (yoksa deterministik olamaz, pagination kirilir).
+            if (query.seed === undefined) {
+                throw new BadRequestException('shuffle icin seed gerekli');
+            }
+            // 1. SADECE sirali ID'leri raw cek (hash siralama Prisma orderBy'a sigmaz).
+            //    isPublished BURADA da sart (invariant — raw SQL otomatik koymaz).
+            const orderedIds = await this.prisma.$queryRaw<Array<{ id: string }>>`
+                SELECT id FROM "Artwork"
+                WHERE "isPublished" = true
+                ORDER BY md5(id || ${query.seed}::text)
+                LIMIT ${limit} OFFSET ${(page - 1) * limit}
+            `;
+            const ids = orderedIds.map((r) => r.id);
+
+            // 2. O ID'lerle normal Prisma cek — mevcut include/_count AYNEN calisir.
+            const unordered = await this.prisma.artwork.findMany({
+                where: { id: { in: ids } },
                 include: {
                     artist: { select: { id: true, name: true, slug: true } },
                     _count: { select: { likes: true } },
                 },
-                orderBy: this.buildOrderBy(sort),
-                skip: (page - 1) * limit,
-                take: limit,
-            }),
-            this.prisma.artwork.count({ where }),
-        ]);
+            });
+
+            // 3. IN sirayi BOZAR → raw ID sirasina gore yeniden diz.
+            const byId = new Map(unordered.map((a) => [a.id, a]));
+            rawItems = ids.map((id) => byId.get(id)!).filter(Boolean);
+
+            // 4. Toplam: ayni where (shuffle filtreyi degistirmez, sadece sirayi).
+            total = await this.prisma.artwork.count({ where });
+        } else {
+            [rawItems, total] = await this.prisma.$transaction([
+                this.prisma.artwork.findMany({
+                    where,
+                    include: {
+                        artist: { select: { id: true, name: true, slug: true } },
+                        _count: { select: { likes: true } },
+                    },
+                    orderBy: this.buildOrderBy(sort),
+                    skip: (page - 1) * limit,
+                    take: limit,
+                }),
+                this.prisma.artwork.count({ where }),
+            ]);
+        }
         // _count nested objesini temiz likeCount alanina cevir → API sekli temiz kalir
         const items: FeedArtwork[] = rawItems.map(({ _count, ...artwork }) => ({
             ...artwork,
@@ -488,8 +529,11 @@ export class ArtworkService {
         // sort key'e GIRER: farkli siralamalar ayni cache'i ezmesin (cache cakismasi).
         // Default newest → bos string ile ayni davranis (mevcut cache'ler bozulmaz).
         const sort = query.sort ?? '';
+        // Shuffle'da seed key'e GIRER: her seed farkli sira = farkli cache.
+        // Sadece shuffle'da eklenir → normal sort'larin mevcut key'i bozulmaz.
+        const seedPart = sort === ArtworkSort.SHUFFLE ? `|seed=${query.seed ?? ''}` : '';
         // Alanlar HEP aynı sırada — deterministik key garantisi
-        return `artworks:feed:type=${type}|script=${script}|artistId=${artistId}|sort=${sort}|page=${page}|limit=${limit}`;
+        return `artworks:feed:type=${type}|script=${script}|artistId=${artistId}|sort=${sort}${seedPart}|page=${page}|limit=${limit}`;
     }
 
     /** Artwork verisi değişince feed + daily cache'ini temizler. */

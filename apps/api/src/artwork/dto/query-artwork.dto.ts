@@ -8,6 +8,7 @@ export enum ArtworkSort {
   NEWEST = 'newest',
   OLDEST = 'oldest',
   MOST_LIKED = 'mostLiked',
+  SHUFFLE = 'shuffle',
 }
 
 // Feed/filtre için. Query param'lar string gelir → @Type ile number'a çevir.
@@ -42,4 +43,12 @@ export class QueryArtworkDto {
   @IsOptional()
   @IsEnum(ArtworkSort)
   sort?: ArtworkSort;
+
+  // Shuffle seed'i. SADECE sort=shuffle ile anlamli. Client uretir, oturum boyu
+  // sabit tutar → sayfalama tutarli (ayni seed = ayni hash sirasi). Number:
+  // client Math.random()/Date.now() uretir, string'e gomulur ama int guvenli.
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  seed?: number;
 }
