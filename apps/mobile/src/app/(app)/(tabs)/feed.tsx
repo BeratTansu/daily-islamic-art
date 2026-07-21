@@ -2,20 +2,24 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
     View,
     Text,
-    FlatList,
     Image,
     Pressable,
-    ActivityIndicator,
-    RefreshControl,
     StyleSheet,
 } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
-import { runOnJS } from 'react-native-reanimated';
+import Animated, {
+    runOnJS,
+    useAnimatedStyle,
+    useDerivedValue,
+    useAnimatedReaction,
+    interpolate,
+    Extrapolation,
+} from 'react-native-reanimated';
+import { Tabs, useHeaderMeasurements } from 'react-native-collapsible-tab-view';
 import { router } from 'expo-router';
 import { SearchBar } from '../../../components/SearchBar';
 import {
     artworkService,
-    ArtworkListItem,
     ArtworkDetail,
     ArtworkSort,
 } from '../../../lib/artworks/artworkService';
@@ -23,208 +27,123 @@ import { useLike } from '../../../lib/artworks/useLike';
 import { useLikeContext } from '../../../context/LikeContext';
 import { LikeButton } from '../../../components/LikeButton';
 import { displayLikeCount } from '../../../lib/artworks/likeCount';
+import { FeedPage } from '../../../components/FeedPage';
 import { colors, spacing, fontSize, fontWeight, fontFamily } from '../../../constants/theme';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { EmptyState } from '../../../components/EmptyState';
-import { ErrorState } from '../../../components/ErrorState';
 
-const PAGE_LIMIT = 10;
+// Kompakt yatay kartin yuksekligi (padding dahil). Kutuphane header'i buraya
+// kadar collapse eder ve durur — kompakt kart hep gorunur kalir (Hedef A).
+// Buyuk kartin yuksekligi SABIT DEGIL: normal akista, kutuphane kendisi olcer.
+const HEADER_MIN = 88;
 
 export default function FeedScreen() {
-    const [items, setItems] = useState<ArtworkListItem[]>([]);
-    const [page, setPage] = useState(1);
-    const [hasMore, setHasMore] = useState(true);
-    const [loading, setLoading] = useState(true); // ilk yükleme
-    const [loadingMore, setLoadingMore] = useState(false); // alt sayfa
-    const [refreshing, setRefreshing] = useState(false);
-    const [error, setError] = useState<string | null>(null);
-
     const [daily, setDaily] = useState<ArtworkDetail | null>(null);
-    const [sort, setSort] = useState<ArtworkSort>('newest'); // oturumluk — acilista hep newest
+    const [dailyLoading, setDailyLoading] = useState(true);
 
-    // --- Feed ilk sayfa / yenileme ---
-    // sort parametre olarak gelir (state'ten degil) → useCallback dependency temiz kalir,
-    // sort degisince loadFirstPage yeniden yaratilmaz. newest ise gonderilmez (cache tekilligi).
-    const loadFirstPage = useCallback(async (sortArg: ArtworkSort, refresh = false) => {
-        setError(null);
-        try {
-            const res = await artworkService.list({
-                page: 1,
-                limit: PAGE_LIMIT,
-                refresh,
-                ...(sortArg !== 'newest' && { sort: sortArg }),
-            });
-            setItems(res.items);
-            setPage(res.meta.page);
-            setHasMore(res.meta.page < res.meta.pages);
-        } catch (e) {
-            setError('Eserler yüklenemedi.');
-        }
-    }, []);
+    const { toggle, likeOnly } = useLike();
+    const { getIsLiked } = useLikeContext();
 
+    // Daily feed.tsx'te yasar (collapse header'da, siralamadan bagimsiz).
+    // FeedPage pull-to-refresh'i bu fonksiyonu callback ile cagirir.
     const loadDaily = useCallback(async (refresh = false) => {
         try {
             const d = await artworkService.getDaily(refresh);
             setDaily(d);
         } catch {
-            setDaily(null); // daily hata verirse feed çalışmaya devam etsin
+            setDaily(null);
         }
     }, []);
 
-    // Beğeni state'i LikeContext'te (ortak defter). Aynı eser hem listede
-    // hem daily kartında hem detayda olabilir — hepsi aynı defteri okur.
-    // onRefresh clearLikeOverrides'ı kullandığı için burada, onun ÜSTÜNDE tanımlı.
-    const { toggle, likeOnly } = useLike();
-    const { getIsLiked, clear: clearLikeOverrides } = useLikeContext();
-
-    // Açılış
     useEffect(() => {
         let active = true;
         (async () => {
-            setLoading(true);
-            // Acilista hep newest (sort state default 'newest').
-            await Promise.all([loadFirstPage('newest'), loadDaily()]);
-            if (active) setLoading(false);
+            setDailyLoading(true);
+            await loadDaily();
+            if (active) setDailyLoading(false);
         })();
         return () => {
             active = false;
         };
-    }, [loadFirstPage, loadDaily]);
+    }, [loadDaily]);
 
-    // Pull-to-refresh
-    // Pull-to-refresh
-    const onRefresh = useCallback(async () => {
-        setRefreshing(true);
-        // refresh: true → backend cache'i baypas eder, taze likeCount + daily gelir.
-        // Mevcut sort korunur (kullanici mostLiked'dayken refresh newest'e atmasin).
-        await Promise.all([loadFirstPage(sort, true), loadDaily(true)]);
-        clearLikeOverrides();
-        setRefreshing(false);
-    }, [loadFirstPage, loadDaily, clearLikeOverrides, sort]);
-
-    // Sonsuz kaydırma — çift-fetch guard'lı
-    const loadMore = useCallback(async () => {
-        if (loadingMore || !hasMore || loading) return;
-        setLoadingMore(true);
-        try {
-            const next = page + 1;
-            const res = await artworkService.list({
-                page: next,
-                limit: PAGE_LIMIT,
-                ...(sort !== 'newest' && { sort }),
-            });
-            setItems((prev) => [...prev, ...res.items]);
-            setPage(res.meta.page);
-            setHasMore(res.meta.page < res.meta.pages);
-        } catch {
-            // alt sayfa hatası sessiz — üstteki liste durur, retry pull ile
-        } finally {
-            setLoadingMore(false);
-        }
-    }, [loadingMore, hasMore, loading, page, sort]);
+    const onDailyRefresh = useCallback(() => loadDaily(true), [loadDaily]);
 
     const goToDetail = useCallback((slug: string) => {
         router.push({ pathname: '/artwork/[slug]', params: { slug } });
     }, []);
 
-    // Chip'e basinca: ayni sort'a tekrar basmak no-op, farkliysa liste bastan yuklenir.
-    const handleSortChange = useCallback(
-        async (next: ArtworkSort) => {
-            if (next === sort) return; // ayni sort → bir sey yapma
-            setSort(next);
-            setLoading(true); // liste komple degisiyor → tam loading (alt spinner degil)
-            await loadFirstPage(next);
-            clearLikeOverrides(); // yeni liste → eski override'lar alakasiz
-            setLoading(false);
-        },
-        [sort, loadFirstPage, clearLikeOverrides],
-    );
-
-    // Hook'lar erken return'lerin ÜSTÜNDE olmalı (Rules of Hooks).
-    // Aşağıdaki `if (loading) return` bu useCallback'i atlarsa hook sırası bozulur.
-    const renderItem = useCallback(
-        ({ item }: { item: ArtworkListItem }) => (
-            <ArtworkCard
-                item={item}
-                isLiked={getIsLiked(item.id, item.isLiked)}
+    // Collapse header artik ayri bir component (DailyHeader) — cunku useCurrentTabScrollY
+    // hook'u Tabs.Container context'i icinde cagrilmali. renderHeader sadece onu render eder.
+    const renderHeader = useCallback(() => {
+        if (!daily) {
+            // Daily gelmese de arama kapisi kaybolmasin.
+            return (
+                <View style={styles.headerContent} pointerEvents="box-none">
+                    <View style={styles.searchInHeader}>
+                        <SearchBar onPress={() => router.push('/search')} />
+                    </View>
+                </View>
+            );
+        }
+        return (
+            <DailyHeader
+                daily={daily}
+                isLiked={getIsLiked(daily.id, daily.isLiked)}
                 onPress={goToDetail}
                 onToggleLike={toggle}
                 onDoubleTapLike={likeOnly}
             />
-        ),
-        [goToDetail, toggle, likeOnly, getIsLiked],
-    );
-
-    // --- İlk yükleme spinner ---
-    if (loading) {
-        return (
-            <View style={styles.centered}>
-                <ActivityIndicator size="large" color={colors.primary} />
-            </View>
         );
-    }
-
-    // --- İlk yükleme hatası (feed boş + hata) ---
-    if (error && items.length === 0) {
-        return <ErrorState message={error} onAction={onRefresh} />;
-    }
-
-
-
-    const renderHeader = () => (
-        <View>
-            <SearchBar onPress={() => router.push('/search')} />
-            <Text style={styles.dailyLabel}>Günün Eseri</Text>
-            {daily && (
-                <DailyCard
-                    daily={daily}
-                    isLiked={getIsLiked(daily.id, daily.isLiked)}
-                    onPress={goToDetail}
-                    onToggleLike={toggle}
-                    onDoubleTapLike={likeOnly}
-                />
-            )}
-            {daily && (
-                <View style={styles.divider}>
-                    <View style={styles.dividerLine} />
-                    <Text style={styles.dividerMark}>✦</Text>
-                    <View style={styles.dividerLine} />
-                </View>
-            )}
-            <SortChips value={sort} onChange={handleSortChange} />
-        </View>
-    );
+    }, [daily, getIsLiked, goToDetail, toggle, likeOnly]);
 
     return (
-        <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
-            <FlatList
-                data={items}
-                keyExtractor={(item) => item.id}
-                contentContainerStyle={styles.listContent}
-                ListHeaderComponent={renderHeader}
-                renderItem={renderItem}
-                onEndReached={loadMore}
-                onEndReachedThreshold={0.5}
-                refreshControl={
-                    <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
-                }
-                ListFooterComponent={
-                    loadingMore ? (
-                        <View style={styles.footer}>
-                            <ActivityIndicator color={colors.primary} />
-                        </View>
-                    ) : null
-                }
-                ListEmptyComponent={
-                    <EmptyState icon="image-outline" message="Henüz eser yok." />
-                }
-            />
+        <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['top']}>
+            <Tabs.Container
+                renderHeader={renderHeader}
+                initialTabName="newest"
+                lazy
+                minHeaderHeight={HEADER_MIN}
+                headerContainerStyle={styles.headerContainer}
+            >
+                <Tabs.Tab name="mostLiked" label="En Beğenilen">
+                    <FeedPage sort="mostLiked" onDailyRefresh={onDailyRefresh} />
+                </Tabs.Tab>
+                <Tabs.Tab name="newest" label="En Yeni">
+                    <FeedPage sort="newest" onDailyRefresh={onDailyRefresh} />
+                </Tabs.Tab>
+                <Tabs.Tab name="oldest" label="En Eski">
+                    <FeedPage sort="oldest" onDailyRefresh={onDailyRefresh} />
+                </Tabs.Tab>
+            </Tabs.Container>
         </SafeAreaView>
     );
 }
 
-// Kalp + sagindaki begeni sayisi. Sayi turetilmis (base + override deltasi),
-// 0 ise gizli (ciplak kalp daha temiz). Iki kart da bunu kullanir.
+// --- Gorsel jesti (daily kartinda) ---
+function useImageGesture(
+    id: string,
+    slug: string,
+    isLiked: boolean,
+    onPress: (slug: string) => void,
+    onDoubleTapLike: (id: string, isLiked: boolean) => void,
+) {
+    return useMemo(() => {
+        const doubleTap = Gesture.Tap()
+            .numberOfTaps(2)
+            .maxDelay(180)
+            .onEnd(() => {
+                runOnJS(onDoubleTapLike)(id, isLiked);
+            });
+
+        const singleTap = Gesture.Tap().onEnd(() => {
+            runOnJS(onPress)(slug);
+        });
+
+        return Gesture.Exclusive(doubleTap, singleTap);
+    }, [id, slug, isLiked, onPress, onDoubleTapLike]);
+}
+
+// --- Kalp + begeni sayisi (daily kartinda) ---
 function LikeMeta({
     id,
     baseCount,
@@ -247,74 +166,144 @@ function LikeMeta({
     );
 }
 
-// Feed siralama chip'leri. Sadece feed listesini siralar (daily bagimsiz).
-// Secili chip dolu (accent), digerleri cizgili. 3 sabit secenek.
-const SORT_OPTIONS: { value: ArtworkSort; label: string }[] = [
-    { value: 'newest', label: 'En Yeni' },
-    { value: 'oldest', label: 'En Eski' },
-    { value: 'mostLiked', label: 'En Beğenilen' },
-];
-
-function SortChips({
-    value,
-    onChange,
+function DailyHeader({
+    daily,
+    isLiked,
+    onPress,
+    onToggleLike,
+    onDoubleTapLike,
 }: {
-    value: ArtworkSort;
-    onChange: (next: ArtworkSort) => void;
+    daily: ArtworkDetail;
+    isLiked: boolean;
+    onPress: (slug: string) => void;
+    onToggleLike: (id: string, isLiked: boolean) => void;
+    onDoubleTapLike: (id: string, isLiked: boolean) => void;
 }) {
+    // top: header'in anlik kaydirma degeri (0 → -(yukseklik - HEADER_MIN)).
+    // height: header'in OLCULMUS yuksekligi. Animasyonu scrollY degil BU surer:
+    // collapse'in gercegine kilitli → tab degisince zipla/yarim kalma olmaz.
+    const { top, height } = useHeaderMeasurements();
+
+    // Kompakt kart gorunmezken dokunmayi calmasin diye pointerEvents state'i.
+    // Worklet'ten React state'e gecis runOnJS ile (REFERANS kurali).
+    const [compactActive, setCompactActive] = useState(false);
+
+    // 0 → 1 collapse ilerlemesi.
+    const progress = useDerivedValue(() => {
+        const total = (height ?? 0) - HEADER_MIN;
+        if (total <= 0) return 0;
+        const p = -top.value / total;
+        return p < 0 ? 0 : p > 1 ? 1 : p;
+    });
+
+    useAnimatedReaction(
+        () => progress.value > 0.5,
+        (aktif, onceki) => {
+            if (aktif !== onceki) runOnJS(setCompactActive)(aktif);
+        },
+    );
+
+    const bigStyle = useAnimatedStyle(() => ({
+        opacity: interpolate(progress.value, [0, 0.6], [1, 0], Extrapolation.CLAMP),
+        transform: [
+            {
+                scale: interpolate(progress.value, [0, 0.6], [1, 0.94], Extrapolation.CLAMP),
+            },
+        ],
+    }));
+
+    const compactStyle = useAnimatedStyle(() => ({
+        opacity: interpolate(progress.value, [0.35, 0.9], [0, 1], Extrapolation.CLAMP),
+        transform: [
+            {
+                translateY: interpolate(progress.value, [0.35, 1], [24, 0], Extrapolation.CLAMP),
+            },
+            {
+                scale: interpolate(progress.value, [0.35, 1], [0.92, 1], Extrapolation.CLAMP),
+            },
+        ],
+    }));
+
     return (
-        <View style={styles.chipRow}>
-            {SORT_OPTIONS.map((opt) => {
-                const active = opt.value === value;
-                return (
-                    <Pressable
-                        key={opt.value}
-                        onPress={() => onChange(opt.value)}
-                        style={[styles.chip, active && styles.chipActive]}
-                    >
-                        <Text style={[styles.chipText, active && styles.chipTextActive]}>
-                            {opt.label}
-                        </Text>
-                    </Pressable>
-                );
-            })}
+        <View style={styles.headerContent} pointerEvents="box-none">
+            {/* Arama: header'in en ustunde, normal akista. Fade OLMAZ — header'la
+                beraber yukari kayar, collapsed'da gorunmez, en uste donunce gelir. */}
+            <View style={styles.searchInHeader}>
+                <SearchBar onPress={() => router.push('/search')} />
+            </View>
+
+            {/* Buyuk kart: NORMAL AKISTA (absolute degil) → header dogal yuksekligini
+                bundan alir, kutuphane dogru olcer. Scroll'la sadece soner. */}
+            <Animated.View style={bigStyle} pointerEvents={compactActive ? 'none' : 'box-none'}>
+                <Text style={styles.dailyLabel}>Günün Eseri</Text>
+                <DailyCard
+                    daily={daily}
+                    isLiked={isLiked}
+                    onPress={onPress}
+                    onToggleLike={onToggleLike}
+                    onDoubleTapLike={onDoubleTapLike}
+                />
+                <View style={styles.divider}>
+                    <View style={styles.dividerLine} />
+                    <Text style={styles.dividerMark}>✦</Text>
+                    <View style={styles.dividerLine} />
+                </View>
+            </Animated.View>
+
+            {/* Kompakt kart: absolute EN ALTTA. Collapse bitince gorunur kalan serit
+                tam bu — HEADER_MIN yuksekligindeki alt kisim. */}
+            <Animated.View
+                style={[styles.compactLayer, compactStyle]}
+                pointerEvents={compactActive ? 'box-none' : 'none'}
+            >
+                <CompactDailyCard
+                    daily={daily}
+                    isLiked={isLiked}
+                    onPress={onPress}
+                    onToggleLike={onToggleLike}
+                />
+            </Animated.View>
         </View>
     );
 }
 
-// Görsel jesti: çift dokunma → beğen (asla kaldırmaz), tek dokunma → detay.
-// Exclusive: önce doubleTap denenir, ~200ms içinde ikinci dokunuş gelmezse singleTap.
-// Bedeli: tek dokunuşta ~200ms navigasyon gecikmesi. Gün 17'de hissiyat değerlendirilecek.
-//
-// runOnJS ŞART: jest callback'leri UI thread'de (worklet) çalışır,
-// React state'ine oradan dokunulamaz.
-function useImageGesture(
-    id: string,
-    slug: string,
-    isLiked: boolean,
-    onPress: (slug: string) => void,
-    onDoubleTapLike: (id: string, isLiked: boolean) => void,
-) {
-    return useMemo(() => {
-        const doubleTap = Gesture.Tap()
-            .numberOfTaps(2)
-            // Varsayılan 500ms → iki dokunuş arası bu kadar beklenir, tek dokunuş
-            // o kadar gecikir. 250ms: Instagram'ın hissiyatına yakın.
-            // Bedeli: yavaş çift dokunuş "çift" sayılmaz, detay açılır.
-            .maxDelay(180)
-            .onEnd(() => {
-                runOnJS(onDoubleTapLike)(id, isLiked);
-            });
-
-        const singleTap = Gesture.Tap().onEnd(() => {
-            runOnJS(onPress)(slug);
-        });
-
-        return Gesture.Exclusive(doubleTap, singleTap);
-    }, [id, slug, isLiked, onPress, onDoubleTapLike]);
+// Kompakt daily: kucuk yatay kart (thumbnail + isim + kalp). Buyuk kartin morph hedefi.
+function CompactDailyCard({
+    daily,
+    isLiked,
+    onPress,
+    onToggleLike,
+}: {
+    daily: ArtworkDetail;
+    isLiked: boolean;
+    onPress: (slug: string) => void;
+    onToggleLike: (id: string, isLiked: boolean) => void;
+}) {
+    return (
+        <Pressable style={styles.compactCard} onPress={() => onPress(daily.slug)}>
+            <Image
+                source={{ uri: daily.thumbUrl ?? daily.imageUrl }}
+                style={styles.compactImage}
+                resizeMode="cover"
+            />
+            <View style={styles.compactInfo}>
+                <Text style={styles.compactArtist} numberOfLines={1}>
+                    {daily.artist.name}
+                </Text>
+                <Text style={styles.compactLabel}>Bugünün eseri</Text>
+            </View>
+            <LikeMeta
+                id={daily.id}
+                baseCount={daily.likeCount}
+                backendIsLiked={daily.isLiked}
+                displayIsLiked={isLiked}
+                onToggleLike={onToggleLike}
+            />
+        </Pressable>
+    );
 }
 
-// --- Günün eseri kartı (feed üstü) ---
+// --- Gunun eseri karti ---
 function DailyCard({
     daily,
     isLiked,
@@ -341,8 +330,6 @@ function DailyCard({
                     />
                 </GestureDetector>
 
-                {/* Meta satırı jest DIŞINDA: gecikmesiz detay + kalp butonu.
-                    Kalp GestureDetector içinde olsaydı jest onu yutardı. */}
                 <View style={styles.metaRow}>
                     <Pressable style={styles.metaText} onPress={() => onPress(daily.slug)}>
                         <Text style={styles.dailyArtist} numberOfLines={1}>
@@ -362,67 +349,59 @@ function DailyCard({
     );
 }
 
-// --- Feed kartı ---
-function ArtworkCard({
-    item,
-    isLiked,
-    onPress,
-    onToggleLike,
-    onDoubleTapLike,
-}: {
-    item: ArtworkListItem;
-    isLiked: boolean;
-    onPress: (slug: string) => void;
-    onToggleLike: (id: string, isLiked: boolean) => void;
-    onDoubleTapLike: (id: string, isLiked: boolean) => void;
-}) {
-    // isLiked artık dışarıdan geliyor: LikeContext defteri ?? backend'in isLiked'ı.
-    const gesture = useImageGesture(item.id, item.slug, isLiked, onPress, onDoubleTapLike);
-
-    return (
-        <View style={styles.card}>
-            <GestureDetector gesture={gesture}>
-                <Image
-                    source={{ uri: item.thumbUrl ?? item.imageUrl }}
-                    style={styles.cardImage}
-                    resizeMode="cover"
-                />
-            </GestureDetector>
-
-            <View style={styles.metaRow}>
-                <Pressable style={styles.metaText} onPress={() => onPress(item.slug)}>
-                    <Text style={styles.cardArtist} numberOfLines={1}>
-                        {item.artist.name}
-                    </Text>
-                </Pressable>
-                <LikeMeta
-                    id={item.id}
-                    baseCount={item.likeCount}
-                    backendIsLiked={item.isLiked ?? false}
-                    displayIsLiked={isLiked}
-                    onToggleLike={onToggleLike}
-                />
-            </View>
-        </View>
-    );
-}
-
 const styles = StyleSheet.create({
-    centered: {
-        flex: 1,
+    searchInHeader: {
+        paddingTop: spacing.sm,
+        marginBottom: spacing.md,
+    },
+    headerContainer: {
+        backgroundColor: colors.background,
+        // Collapse header'in golge/border'i yok — krem zemine kaynasin.
+        elevation: 0,
+        shadowOpacity: 0,
+    },
+    headerContent: {
+        paddingHorizontal: spacing.md,
+        paddingTop: spacing.sm,
+    },
+    // Kompakt kart en altta — header collapse olunca bu kisim gorunur kalir.
+    compactLayer: {
+        position: 'absolute',
+        bottom: spacing.sm,
+        left: spacing.md,
+        right: spacing.md,
+    },
+    compactCard: {
+        flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'center',
-        padding: spacing.lg,
-        backgroundColor: colors.background,
+        gap: spacing.sm,
+        backgroundColor: colors.surface,
+        borderRadius: 10,
+        borderWidth: 1,
+        borderColor: colors.border,
+        padding: spacing.sm,
     },
-    listContent: {
-        padding: spacing.md,
-        backgroundColor: colors.background,
-        flexGrow: 1,
+    compactImage: {
+        width: 56,
+        height: 56,
+        borderRadius: 8,
+        backgroundColor: colors.surface,
     },
-    // Daily
+    compactInfo: {
+        flex: 1,
+        minWidth: 0,
+    },
+    compactArtist: {
+        fontSize: 17,
+        fontFamily: fontFamily.serif,
+        color: colors.text,
+    },
+    compactLabel: {
+        fontSize: fontSize.caption,
+        color: colors.textMuted,
+    },
     dailyWrap: {
-        marginBottom: spacing.lg,
+        marginBottom: spacing.md,
     },
     dailyLabel: {
         color: colors.accent,
@@ -439,7 +418,7 @@ const styles = StyleSheet.create({
         alignSelf: 'center',
         maxWidth: 200,
         marginTop: spacing.xs,
-        marginBottom: spacing.lg,
+        marginBottom: spacing.md,
     },
     dividerLine: {
         flex: 1,
@@ -467,46 +446,6 @@ const styles = StyleSheet.create({
         aspectRatio: 4 / 3,
         backgroundColor: colors.surface,
     },
-    // Sort chip'leri
-    chipRow: {
-        flexDirection: 'row',
-        gap: spacing.sm,
-        marginBottom: spacing.md,
-    },
-    chip: {
-        paddingHorizontal: spacing.md,
-        paddingVertical: spacing.xs,
-        borderRadius: 20,
-        borderWidth: 1,
-        borderColor: colors.border,
-        backgroundColor: colors.surface,
-    },
-    chipActive: {
-        backgroundColor: colors.primary,
-        borderColor: colors.primary,
-    },
-    chipText: {
-        fontSize: fontSize.caption,
-        color: colors.textMuted,
-    },
-    chipTextActive: {
-        color: colors.background,
-    },
-    // Kart
-    card: {
-        backgroundColor: colors.surface,
-        borderRadius: 10,
-        overflow: 'hidden',
-        marginBottom: spacing.md,
-        borderWidth: 1,
-        borderColor: colors.border,
-    },
-    cardImage: {
-        width: '100%',
-        aspectRatio: 1,
-        backgroundColor: colors.surface,
-    },
-    // İki kart da aynı meta satırını kullanıyor: sanatçı adı (esner) + kalp.
     metaRow: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -526,15 +465,5 @@ const styles = StyleSheet.create({
     likeCount: {
         fontSize: fontSize.caption,
         color: colors.textMuted,
-        // fontWeight yok — fontFamily kullanmiyoruz, sistem fontu default agirlikta.
-    },
-    cardArtist: {
-        fontSize: fontSize.heading,
-        fontWeight: fontWeight.semibold,
-        color: colors.text,
-    },
-    // Durumlar
-    footer: {
-        paddingVertical: spacing.lg,
     },
 });
