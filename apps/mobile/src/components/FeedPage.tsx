@@ -18,12 +18,10 @@ import { colors, spacing } from '../constants/theme';
 import { EmptyState } from './EmptyState';
 import { ErrorState } from './ErrorState';
 import { ArtworkCard } from './ArtworkCard';
+import { useTranslation } from 'react-i18next';
 
 const PAGE_LIMIT = 10;
 
-// Tek bir siralama sayfasi. Pager bunu 3 kez (newest/oldest/mostLiked) render eder.
-// Her sayfa KENDI state'ini tutar (items/page/hasMore) — izolasyon.
-// sort PROP olarak gelir (state degil): useCallback dependency'leri temiz kalir.
 export function FeedPage({
     sort,
     onDailyRefresh,
@@ -31,6 +29,7 @@ export function FeedPage({
     sort: ArtworkSort;
     onDailyRefresh: () => Promise<void>;
 }) {
+    const { t } = useTranslation();
     const [items, setItems] = useState<ArtworkListItem[]>([]);
     const [page, setPage] = useState(1);
     const [hasMore, setHasMore] = useState(true);
@@ -42,7 +41,6 @@ export function FeedPage({
     const { toggle, likeOnly } = useLike();
     const { getIsLiked, clear: clearLikeOverrides } = useLikeContext();
 
-    // Ilk sayfa. newest ise sort GONDERILMEZ (cache tekilligi — REFERANS karari).
     const loadFirstPage = useCallback(async (refresh = false) => {
         setError(null);
         try {
@@ -56,11 +54,10 @@ export function FeedPage({
             setPage(res.meta.page);
             setHasMore(res.meta.page < res.meta.pages);
         } catch (e) {
-            setError('Eserler yüklenemedi.');
+            setError(t('feed.errorLoad'));
         }
-    }, [sort]);
+    }, [sort, t]);
 
-    // Acilis — bu sayfa mount olunca kendi verisini ceker.
     useEffect(() => {
         let active = true;
         (async () => {
@@ -73,7 +70,6 @@ export function FeedPage({
         };
     }, [loadFirstPage]);
 
-    // Pull-to-refresh: bu sayfayi + daily'yi yeniler (daily ustte, callback ile).
     const onRefresh = useCallback(async () => {
         setRefreshing(true);
         await Promise.all([loadFirstPage(true), onDailyRefresh()]);
@@ -99,7 +95,6 @@ export function FeedPage({
             setPage(res.meta.page);
             setHasMore(res.meta.page < res.meta.pages);
         } catch {
-            // alt sayfa hatasi sessiz
         } finally {
             setLoadingMore(false);
         }
@@ -131,7 +126,8 @@ export function FeedPage({
     }
 
     if (error && items.length === 0) {
-        return <ErrorState message={error} onAction={onRefresh} />;
+        // HATA DÜZELTİLDİ: actionLabel eklendi
+        return <ErrorState message={error} onAction={onRefresh} actionLabel={t('common.retry')} />;
     }
 
     return (
@@ -153,7 +149,7 @@ export function FeedPage({
                 ) : null
             }
             ListEmptyComponent={
-                <EmptyState icon="image-outline" message="Henüz eser yok." />
+                <EmptyState icon="image-outline" message={t('feed.emptyList')} />
             }
         />
     );

@@ -12,8 +12,10 @@ import {
 import { useAuth } from '../context/AuthContext';
 import { colors, spacing, fontFamily } from '../constants/theme';
 import { router } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 
 export default function Register() {
+    const { t } = useTranslation();
     const { register } = useAuth();
     const [displayName, setDisplayName] = useState('');
     const [email, setEmail] = useState('');
@@ -25,31 +27,28 @@ export default function Register() {
         if (submitting) return;
         setError(null);
 
-        // Client-side validasyon = backend RegisterDto kurallarının aynası (UX kolaylığı).
-        // Backend hâlâ tek gerçek kaynak; bu sadece kullanıcıyı erken uyarır.
-        // KURAL SENKRONU: backend register.dto.ts değişirse burası da güncellenmeli.
         const name = displayName.trim();
         const mail = email.trim();
 
         if (!name || !mail || !password) {
-            setError('Tüm alanları doldur.');
+            setError(t('auth.valAllFields'));
             return;
         }
         if (name.length < 2) {
-            setError('Ad en az 2 karakter olmalı.');
+            setError(t('auth.valNameMin'));
             return;
         }
         if (password.length < 8) {
-            setError('Şifre en az 8 karakter olmalı.');
+            setError(t('auth.valPasswordMin'));
             return;
         }
 
         setSubmitting(true);
         try {
             await register(mail, password, name);
-            router.replace('/feed'); // kayıt = otomatik giriş; imperatif yönlendir
+            router.replace('/feed');
         } catch (e) {
-            setError(e instanceof Error ? e.message : 'Kayıt başarısız. Tekrar dene.');
+            setError(e instanceof Error ? e.message : t('auth.registerError'));
         } finally {
             setSubmitting(false);
         }
@@ -66,14 +65,14 @@ export default function Register() {
                     disabled={submitting}
                     style={styles.backButton}
                 >
-                    <Text style={styles.backButtonText}>← Geri</Text>
+                    <Text style={styles.backButtonText}>← {t('common.back')}</Text>
                 </TouchableOpacity>
 
-                <Text style={styles.title}>Hesap Oluştur</Text>
+                <Text style={styles.title}>{t('auth.registerTitle')}</Text>
 
                 <TextInput
                     style={styles.input}
-                    placeholder="Ad"
+                    placeholder={t('auth.name')}
                     placeholderTextColor={colors.textMuted}
                     value={displayName}
                     onChangeText={setDisplayName}
@@ -84,7 +83,7 @@ export default function Register() {
 
                 <TextInput
                     style={styles.input}
-                    placeholder="E-posta"
+                    placeholder={t('auth.email')}
                     placeholderTextColor={colors.textMuted}
                     value={email}
                     onChangeText={setEmail}
@@ -96,7 +95,7 @@ export default function Register() {
 
                 <TextInput
                     style={styles.input}
-                    placeholder="Şifre"
+                    placeholder={t('auth.password')}
                     placeholderTextColor={colors.textMuted}
                     value={password}
                     onChangeText={setPassword}
@@ -116,7 +115,7 @@ export default function Register() {
                     {submitting ? (
                         <ActivityIndicator color="#fff" />
                     ) : (
-                        <Text style={styles.buttonText}>Kayıt Ol</Text>
+                        <Text style={styles.buttonText}>{t('auth.registerSubmit')}</Text>
                     )}
                 </TouchableOpacity>
 
@@ -125,7 +124,7 @@ export default function Register() {
                     disabled={submitting}
                     style={styles.linkWrapper}
                 >
-                    <Text style={styles.link}>Zaten hesabın var mı? Giriş yap</Text>
+                    <Text style={styles.link}>{t('auth.loginLink')}</Text>
                 </TouchableOpacity>
             </View>
         </KeyboardAvoidingView>

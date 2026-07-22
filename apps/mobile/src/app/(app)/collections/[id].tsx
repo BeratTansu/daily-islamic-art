@@ -18,8 +18,10 @@ import { colors, spacing } from '../../../constants/theme';
 import { useNavigationGuard } from '../../../lib/hooks/useNavigationGuard';
 import { EmptyState } from '../../../components/EmptyState';
 import { ErrorState } from '../../../components/ErrorState';
+import { useTranslation } from 'react-i18next';
 
 export default function CollectionDetailScreen() {
+    const { t } = useTranslation();
     const guardNavigate = useNavigationGuard();
     const { id } = useLocalSearchParams<{ id: string }>();
     const [collection, setCollection] = useState<CollectionDetail | null>(null);
@@ -33,11 +35,10 @@ export default function CollectionDetailScreen() {
             const data = await collectionService.getOne(id);
             setCollection(data);
         } catch {
-            setError('Koleksiyon yüklenemedi.');
+            setError(t('collections.errorLoad'));
         }
-    }, [id]);
+    }, [id, t]);
 
-    // Odaklanınca tazele: detaydan çıkıp (eser eklenmiş olabilir) geri gelince güncel.
     useFocusEffect(
         useCallback(() => {
             let active = true;
@@ -56,31 +57,29 @@ export default function CollectionDetailScreen() {
         guardNavigate(() => router.push({ pathname: '/artwork/[slug]', params: { slug } }));
     }, [guardNavigate]);
 
-    // Silme: görünür buton → onay → sil → listeye geri dön.
-    // Alert.alert iki platformda da çalışır (Alert.prompt'un aksine).
     const handleDelete = useCallback(() => {
         Alert.alert(
-            'Koleksiyonu sil',
-            'Bu koleksiyon silinecek. Eserlerin kendisi silinmez.',
+            t('collections.deleteTitle'),
+            t('collections.deleteMessage'),
             [
-                { text: 'Vazgeç', style: 'cancel' },
+                { text: t('common.cancel'), style: 'cancel' },
                 {
-                    text: 'Sil',
+                    text: t('common.delete'),
                     style: 'destructive',
                     onPress: async () => {
                         setDeleting(true);
                         try {
                             await collectionService.remove(id);
-                            router.back(); // listeye dön, useFocusEffect orada tazeler
+                            router.back();
                         } catch {
                             setDeleting(false);
-                            Alert.alert('Hata', 'Koleksiyon silinemedi.');
+                            Alert.alert(t('common.error'), t('collections.deleteError'));
                         }
                     },
                 },
             ],
         );
-    }, [id]);
+    }, [id, t]);
 
     if (loading) {
         return (
@@ -93,8 +92,8 @@ export default function CollectionDetailScreen() {
     if (error || !collection) {
         return (
             <ErrorState
-                message={error ?? 'Koleksiyon bulunamadı.'}
-                actionLabel="Geri dön"
+                message={error ?? t('collections.notFound')}
+                actionLabel={t('common.goBack')}
                 onAction={() => router.back()}
             />
         );
@@ -105,18 +104,17 @@ export default function CollectionDetailScreen() {
             <Text style={styles.title} numberOfLines={2}>
                 {collection.name}
             </Text>
-            <Text style={styles.count}>{collection.items.length} eser</Text>
+            {/* HATA DÜZELTİLDİ: t() fonksiyon parametre sırası düzeltildi */}
+            <Text style={styles.count}>{t('collections.itemCount', { count: collection.items.length })}</Text>
         </View>
     );
 
     const empty = (
-        <EmptyState icon="images-outline" message="Bu koleksiyon henüz boş." />
+        <EmptyState icon="images-outline" message={t('collections.emptyDetail')} />
     );
 
     return (
         <View style={styles.container}>
-            {/* Stack header'ına sağ üst "Sil" butonu. headerShown burada true —
-                (app) Stack'i normalde false, bu ekran override eder. */}
             <Stack.Screen
                 options={{
                     headerShown: true,

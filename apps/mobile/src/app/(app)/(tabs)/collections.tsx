@@ -18,28 +18,25 @@ import { CreateCollectionModal } from '../../../components/CreateCollectionModal
 import { colors, spacing, fontSize, fontWeight, fontFamily } from '../../../constants/theme';
 import { EmptyState } from '../../../components/EmptyState';
 import { ErrorState } from '../../../components/ErrorState';
+import { useTranslation } from 'react-i18next';
 
-
-// İki farklı şeyi tek listede göstermek için ortak satır tipi.
-// 'liked' = sistem satırı (Beğendiklerim), 'collection' = gerçek koleksiyon.
 type CollectionRow = {
     key: string;
     title: string;
     count: number;
     coverUrl: string | null;
     kind: 'liked' | 'collection';
-    id?: string; // sadece 'collection' için — 'liked'ın id'si yok (sahte satır değil)
+    id?: string;
 };
 
 export default function CollectionsScreen() {
+    const { t } = useTranslation();
     const [rows, setRows] = useState<CollectionRow[]>([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [modalVisible, setModalVisible] = useState(false);
 
-    // İki kaynağı paralel çek, tek listede birleştir.
-    // Beğeni satırı EN BAŞA elle konur — API'ye sahte satır enjekte edilmez.
     const load = useCallback(async () => {
         setError(null);
         try {
@@ -50,7 +47,7 @@ export default function CollectionsScreen() {
 
             const likedRow: CollectionRow = {
                 key: 'liked',
-                title: 'Beğendiklerim',
+                title: t('collections.liked'),
                 count: liked.meta.total,
                 coverUrl: liked.items[0]
                     ? (liked.items[0].thumbUrl ?? liked.items[0].imageUrl)
@@ -69,12 +66,10 @@ export default function CollectionsScreen() {
 
             setRows([likedRow, ...collectionRows]);
         } catch {
-            setError('Koleksiyonlar yüklenemedi.');
+            setError(t('collections.errorLoad'));
         }
-    }, []);
+    }, [t]);
 
-    // useFocusEffect: ekrana her dönüşte tazele. Koleksiyon detayından geri
-    // gelince (eser eklenmiş/çıkmış olabilir) veya kaydet sonrası güncel kalsın.
     useFocusEffect(
         useCallback(() => {
             let active = true;
@@ -98,7 +93,7 @@ export default function CollectionsScreen() {
     const handleCreate = useCallback(
         async (name: string) => {
             await collectionService.create(name);
-            await load(); // yeni koleksiyon listeye girsin
+            await load();
         },
         [load],
     );
@@ -129,12 +124,12 @@ export default function CollectionsScreen() {
                     <Text style={styles.rowTitle} numberOfLines={1}>
                         {item.title}
                     </Text>
-                    <Text style={styles.rowCount}>{item.count} eser</Text>
+                    <Text style={styles.rowCount}>{t('collections.itemCount', { count: item.count })}</Text>
                 </View>
                 <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
             </Pressable>
         ),
-        [goToRow],
+        [goToRow, t],
     );
 
     if (loading) {
@@ -148,7 +143,8 @@ export default function CollectionsScreen() {
     if (error && rows.length === 0) {
         return (
             <View style={styles.centered}>
-                <ErrorState message={error} onAction={onRefresh} />
+                {/* HATA DÜZELTİLDİ: actionLabel eklendi */}
+                <ErrorState message={error} onAction={onRefresh} actionLabel={t('common.retry')} />
             </View>
         );
     }
@@ -156,10 +152,10 @@ export default function CollectionsScreen() {
     return (
         <SafeAreaView style={styles.safe} edges={['top']}>
             <View style={styles.header}>
-                <Text style={styles.headerTitle}>Koleksiyonlar</Text>
+                <Text style={styles.headerTitle}>{t('collections.title')}</Text>
                 <Pressable style={styles.newBtn} onPress={() => setModalVisible(true)}>
                     <Ionicons name="add" size={20} color={colors.primary} />
-                    <Text style={styles.newBtnText}>Yeni</Text>
+                    <Text style={styles.newBtnText}>{t('collections.new')}</Text>
                 </Pressable>
             </View>
 
@@ -175,8 +171,8 @@ export default function CollectionsScreen() {
                     rows.length === 1 ? (
                         <EmptyState
                             icon="albums-outline"
-                            message="Henüz kendi koleksiyonun yok. Keşfet'ten eser ekleyerek başla."
-                            actionLabel="Keşfet'e git"
+                            message={t('collections.emptyMessage')}
+                            actionLabel={t('collections.exploreAction')}
                             onAction={() => router.push('/(app)/(tabs)/feed')}
                             fillScreen={false}
                         />

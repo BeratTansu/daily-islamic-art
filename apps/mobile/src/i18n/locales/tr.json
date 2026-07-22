@@ -1,21 +1,39 @@
 {
+    "nav": {
+        "feed": "Akış",
+        "collections": "Koleksiyonlar",
+        "profile": "Profil"
+    },
     "common": {
         "retry": "Tekrar dene",
-        "cancel": "İptal",
+        "cancel": "Vazgeç",
         "save": "Kaydet",
-        "loading": "Yükleniyor"
+        "loading": "Yükleniyor",
+        "back": "Geri",
+        "goBack": "Geri dön",
+        "delete": "Sil",
+        "remove": "Çıkar",
+        "create": "Oluştur",
+        "error": "Hata",
+        "success": "Başarılı"
     },
     "feed": {
         "discover": "Keşfet",
         "mostLiked": "En Beğenilen",
         "newest": "En Yeni",
         "oldest": "En Eski",
-        "dailyArtwork": "Günün Eseri"
+        "dailyArtwork": "Bugünün eseri",
+        "dailyArtworkUpper": "GÜNÜN ESERİ",
+        "errorLoad": "Eserler yüklenemedi.",
+        "emptyList": "Henüz eser yok.",
+        "emptyDiscover": "Keşfedilecek eser yok.",
+        "reshuffle": "Hepsini keşfettin — yeniden karıştır"
     },
     "profile": {
         "collections": "Koleksiyonlar",
         "likes": "Beğeniler",
-        "settings": "Ayarlar"
+        "settings": "Ayarlar",
+        "logout": "Çıkış Yap"
     },
     "settings": {
         "title": "Ayarlar",
@@ -24,5 +42,71 @@
         "languageEn": "İngilizce",
         "about": "Hakkında",
         "aboutBody": "Daily Islamic Art — İslam sanatını her gün keşfedin. Hat, tezhip, minyatür ve daha fazlası."
+    },
+    "search": {
+        "placeholder": "Sanatçı ara",
+        "prompt": "Sanatçı adıyla arama yap",
+        "noResults": "\"{{query}}\" için sonuç bulunamadı"
+    },
+    "auth": {
+        "welcomeTitle": "Daily Islamic Art",
+        "welcomeSubtitle": "Her gün yeni bir İslam sanatı eseri keşfet.",
+        "name": "Ad",
+        "email": "E-posta",
+        "password": "Şifre",
+        "loginSubmit": "Giriş Yap",
+        "loginError": "Giriş başarısız. Bilgileri kontrol et.",
+        "registerLink": "Hesabın yok mu? Kayıt ol",
+        "registerTitle": "Hesap Oluştur",
+        "registerSubmit": "Kayıt Ol",
+        "registerError": "Kayıt başarısız. Tekrar dene.",
+        "loginLink": "Zaten hesabın var mı? Giriş yap",
+        "valAllFields": "Tüm alanları doldur.",
+        "valNameMin": "Ad en az 2 karakter olmalı.",
+        "valPasswordMin": "Şifre en az 8 karakter olmalı."
+    },
+    "collections": {
+        "new": "Yeni",
+        "title": "Koleksiyonlar",
+        "liked": "Beğendiklerim",
+        "errorLoad": "Koleksiyon yüklenemedi.",
+        "errorLoadLiked": "Beğendiklerin yüklenemedi.",
+        "emptyMessage": "Henüz kendi koleksiyonun yok. Keşfet'ten eser ekleyerek başla.",
+        "emptyLiked": "Henüz beğendiğin bir eser yok.",
+        "emptyDetail": "Bu koleksiyon henüz boş.",
+        "exploreAction": "Keşfet'e git",
+        "notFound": "Koleksiyon bulunamadı.",
+        "createTitle": "Yeni koleksiyon",
+        "namePlaceholder": "Koleksiyon adı",
+        "createError": "Koleksiyon oluşturulamadı.",
+        "deleteTitle": "Koleksiyonu sil",
+        "deleteMessage": "Bu koleksiyon silinecek. Eserlerin kendisi silinmez.",
+        "deleteError": "Koleksiyon silinemedi.",
+        "itemCount_one": "{{count}} eser",
+        "itemCount_other": "{{count}} eser"
+    },
+    "save": {
+        "title": "Koleksiyona kaydet",
+        "newCollection": "Yeni koleksiyon",
+        "errorLoad": "Yüklenemedi. Tekrar dene.",
+        "empty": "Henüz koleksiyonun yok. Yukarıdan yeni bir tane oluştur."
+    },
+    "artwork": {
+        "errorLoad": "Eser yüklenemedi.",
+        "notFound": "Eser bulunamadı.",
+        "metaScript": "Hat türü",
+        "metaPeriod": "Dönem",
+        "metaMedium": "Malzeme",
+        "metaDimensions": "Boyutlar",
+        "actionDownload": "İndir",
+        "removeFromCollectionTitle": "Koleksiyondan çıkar",
+        "removeFromCollectionMessage": "{{name}} koleksiyonundan çıkarılsın mı?",
+        "removeError": "Çıkarılamadı, tekrar dene."
+    },
+    "toast": {
+        "downloadSuccess": "Görsel galeriye kaydedildi",
+        "permissionRequired": "Kaydetmek için galeri izni gerekli",
+        "downloadError": "İndirilemedi, tekrar deneyin",
+        "likeError": "Beğeni kaydedilemedi"
     }
 }

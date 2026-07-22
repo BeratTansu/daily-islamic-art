@@ -17,8 +17,10 @@ import { colors, spacing, fontSize } from '../../constants/theme';
 import { useNavigationGuard } from '../../lib/hooks/useNavigationGuard';
 import { EmptyState } from '../../components/EmptyState';
 import { ErrorState } from '../../components/ErrorState';
+import { useTranslation } from 'react-i18next';
 
 export default function SearchScreen() {
+    const { t } = useTranslation();
     const [query, setQuery] = useState('');
     const [results, setResults] = useState<ArtworkListItem[]>([]);
     const [loading, setLoading] = useState(false);
@@ -74,7 +76,7 @@ export default function SearchScreen() {
                     <Ionicons name="search" size={18} color={colors.textMuted} />
                     <TextInput
                         style={styles.input}
-                        placeholder="Sanatçı ara"
+                        placeholder={t('search.placeholder')}
                         placeholderTextColor={colors.textMuted}
                         value={query}
                         onChangeText={setQuery}
@@ -96,13 +98,17 @@ export default function SearchScreen() {
                     <ActivityIndicator size="large" color={colors.primary} />
                 </View>
             ) : error ? (
-                <ErrorState onAction={() => setRetryTick((t) => t + 1)} />
+                <ErrorState
+                    message={t('common.errorGeneric')}
+                    actionLabel={t('common.retry')}
+                    onAction={() => setRetryTick((n) => n + 1)}
+                />
             ) : trimmed === '' ? (
-                <EmptyState icon="search-outline" message="Sanatçı adıyla arama yap" />
+                <EmptyState icon="search-outline" message={t('search.prompt')} />
             ) : results.length === 0 ? (
                 <EmptyState
                     icon="sad-outline"
-                    message={`"${trimmed}" için sonuç bulunamadı`}
+                    message={t('search.noResults', { query: trimmed })}
                 />
             ) : (
                 <ArtworkGrid

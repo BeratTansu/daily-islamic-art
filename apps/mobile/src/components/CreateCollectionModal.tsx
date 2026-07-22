@@ -11,16 +11,16 @@ import {
     Platform,
 } from 'react-native';
 import { colors, spacing, fontSize, fontWeight } from '../constants/theme';
+import { useTranslation } from 'react-i18next';
 
 type CreateCollectionModalProps = {
     visible: boolean;
     onClose: () => void;
-    // İsmi verir, oluşturma+sonrası çağırana ait. Promise döndürür ki
-    // modal submit sırasında loading gösterip başarıda kendini kapatabilsin.
     onCreate: (name: string) => Promise<void>;
 };
 
 export function CreateCollectionModal({ visible, onClose, onCreate }: CreateCollectionModalProps) {
+    const { t } = useTranslation();
     const [name, setName] = useState('');
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -34,18 +34,17 @@ export function CreateCollectionModal({ visible, onClose, onCreate }: CreateColl
         setError(null);
         try {
             await onCreate(trimmed);
-            // Başarı: temizle + kapat. Çağıran listeyi zaten yeniledi.
             setName('');
             onClose();
         } catch {
-            setError('Koleksiyon oluşturulamadı.');
+            setError(t('collections.createError'));
         } finally {
             setSubmitting(false);
         }
     }
 
     function handleClose() {
-        if (submitting) return; // yazma sürerken kapatma
+        if (submitting) return;
         setName('');
         setError(null);
         onClose();
@@ -56,21 +55,19 @@ export function CreateCollectionModal({ visible, onClose, onCreate }: CreateColl
             visible={visible}
             transparent
             animationType="fade"
-            onRequestClose={handleClose} // Android geri tuşu
+            onRequestClose={handleClose}
         >
-            {/* Arka plan karartma — dışarı dokununca kapanır */}
             <Pressable style={styles.backdrop} onPress={handleClose}>
                 <KeyboardAvoidingView
                     behavior={Platform.OS === 'ios' ? 'padding' : undefined}
                     style={styles.centerWrap}
                 >
-                    {/* İç kutuya dokunma backdrop'a geçmesin */}
                     <Pressable style={styles.card} onPress={() => {}}>
-                        <Text style={styles.title}>Yeni koleksiyon</Text>
+                        <Text style={styles.title}>{t('collections.createTitle')}</Text>
 
                         <TextInput
                             style={styles.input}
-                            placeholder="Koleksiyon adı"
+                            placeholder={t('collections.namePlaceholder')}
                             placeholderTextColor={colors.textMuted}
                             value={name}
                             onChangeText={setName}
@@ -89,7 +86,7 @@ export function CreateCollectionModal({ visible, onClose, onCreate }: CreateColl
                                 onPress={handleClose}
                                 disabled={submitting}
                             >
-                                <Text style={styles.cancelText}>İptal</Text>
+                                <Text style={styles.cancelText}>{t('common.cancel')}</Text>
                             </Pressable>
                             <Pressable
                                 style={[styles.createBtn, !canSubmit && styles.createBtnDisabled]}
@@ -99,7 +96,7 @@ export function CreateCollectionModal({ visible, onClose, onCreate }: CreateColl
                                 {submitting ? (
                                     <ActivityIndicator size="small" color={colors.background} />
                                 ) : (
-                                    <Text style={styles.createText}>Oluştur</Text>
+                                    <Text style={styles.createText}>{t('common.create')}</Text>
                                 )}
                             </Pressable>
                         </View>

@@ -11,13 +11,13 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { artworkService, type ArtworkDetail } from '../lib/artworks/artworkService';
 import { colors, spacing, fontFamily } from '../constants/theme';
+import { useTranslation } from 'react-i18next';
 
 export default function Welcome() {
+    const { t } = useTranslation();
     const [daily, setDaily] = useState<ArtworkDetail | null>(null);
     const insets = useSafeAreaInsets();
 
-    // Görsel dekoratif davet — akışı bloklamaz. Hata sessiz yutulur:
-    // görsel gelmezse koyu arka plan kalır, butonlar çalışmaya devam eder.
     useEffect(() => {
         let active = true;
         artworkService
@@ -26,7 +26,6 @@ export default function Welcome() {
                 if (active) setDaily(d);
             })
             .catch(() => {
-                /* misafir için daily olmasa da olur; ekran patlamaz */
             });
         return () => {
             active = false;
@@ -37,7 +36,6 @@ export default function Welcome() {
 
     return (
         <View style={styles.container}>
-            {/* Katman 1: hafif blurlu görsel, tüm ekran. */}
             {imageUri && (
                 <Image
                     source={{ uri: imageUri }}
@@ -47,14 +45,12 @@ export default function Welcome() {
                 />
             )}
 
-            {/* Katman 2: alttan yukarı koyu gradient — okunurluk + derinlik. */}
             <LinearGradient
                 colors={['rgba(0,0,0,0.15)', 'rgba(0,0,0,0.35)', 'rgba(0,0,0,0.85)']}
                 locations={[0, 0.5, 1]}
                 style={StyleSheet.absoluteFill}
             />
 
-            {/* Katman 3: içerik. */}
             <View
                 style={[
                     styles.content,
@@ -62,21 +58,21 @@ export default function Welcome() {
                 ]}
             >
                 <View style={styles.header}>
-                    <Text style={styles.title}>Daily Islamic Art</Text>
+                    <Text style={styles.title}>{t('auth.welcomeTitle')}</Text>
                     <View style={styles.divider}>
                         <View style={styles.dividerLine} />
                         <Text style={styles.dividerMark}>✦</Text>
                         <View style={styles.dividerLine} />
                     </View>
                     <Text style={styles.subtitle}>
-                        Her gün yeni bir İslam sanatı eseri keşfet.
+                        {t('auth.welcomeSubtitle')}
                     </Text>
                 </View>
 
-                {/* Orta: eser etiketi — sadece daily geldiyse. */}
                 {daily && (
                     <View style={styles.artworkLabel}>
-                        <Text style={styles.artworkLabelKicker}>BUGÜNÜN ESERİ</Text>
+                        {/* Türkçe uppercase tuzağından kaçınmak için uppercase JSON'dan gelmeli */}
+                        <Text style={styles.artworkLabelKicker}>{t('feed.dailyArtworkUpper')}</Text>
                         <Text style={styles.artworkLabelArtist}>{daily.artist.name}</Text>
                     </View>
                 )}
@@ -86,14 +82,14 @@ export default function Welcome() {
                         style={styles.primaryButton}
                         onPress={() => router.push('/register')}
                     >
-                        <Text style={styles.primaryButtonText}>Kayıt Ol</Text>
+                        <Text style={styles.primaryButtonText}>{t('auth.registerSubmit')}</Text>
                     </TouchableOpacity>
 
                     <TouchableOpacity
                         style={styles.secondaryButton}
                         onPress={() => router.push('/login')}
                     >
-                        <Text style={styles.secondaryButtonText}>Giriş Yap</Text>
+                        <Text style={styles.secondaryButtonText}>{t('auth.loginSubmit')}</Text>
                     </TouchableOpacity>
                 </View>
             </View>

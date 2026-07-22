@@ -15,6 +15,7 @@ import {
   CollectionMembership,
 } from '../lib/collections/collectionService';
 import { CreateCollectionModal } from './CreateCollectionModal';
+import { useTranslation } from 'react-i18next';
 
 type Props = {
   visible: boolean;
@@ -23,6 +24,7 @@ type Props = {
 };
 
 export function SaveToCollectionSheet({ visible, artworkId, onClose }: Props) {
+  const { t } = useTranslation();
   const [rows, setRows] = useState<CollectionMembership[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
@@ -42,23 +44,19 @@ export function SaveToCollectionSheet({ visible, artworkId, onClose }: Props) {
     }
   }, [artworkId]);
 
-  // Her açılışta taze liste
   useEffect(() => {
     if (visible) {
       load();
     }
   }, [visible, load]);
 
-  // Satıra bas → ekle/çıkar. Optimistic: state'i anında çevir,
-  // arka planda istek; hata olursa geri al.
   const handleToggle = useCallback(
     async (row: CollectionMembership) => {
-      if (togglingId) return; // başka satır işlenirken kilitle
+      if (togglingId) return;
       setTogglingId(row.id);
 
       const nextContains = !row.containsArtwork;
 
-      // optimistic: ekranı hemen güncelle
       setRows((prev) =>
         prev.map((r) =>
           r.id === row.id
@@ -78,7 +76,6 @@ export function SaveToCollectionSheet({ visible, artworkId, onClose }: Props) {
           await collectionService.removeItem(row.id, artworkId);
         }
       } catch {
-        // revert: istek patladı, eski haline döndür
         setRows((prev) =>
           prev.map((r) =>
             r.id === row.id
@@ -100,11 +97,9 @@ export function SaveToCollectionSheet({ visible, artworkId, onClose }: Props) {
 
   const handleCreate = useCallback(
     async (name: string) => {
-      // Yeni koleksiyon oluştur + hemen bu esere ekle
       const { id } = await collectionService.create(name);
       await collectionService.addItem(id, artworkId);
       setCreateOpen(false);
-      // listeyi tazele — yeni koleksiyon checkmark'lı görünsün
       await load();
     },
     [artworkId, load],
@@ -119,25 +114,24 @@ export function SaveToCollectionSheet({ visible, artworkId, onClose }: Props) {
         onRequestClose={onClose}
       >
         <Pressable style={styles.backdrop} onPress={onClose}>
-          {/* İç Pressable dokunuşu yutar */}
           <Pressable style={styles.sheet} onPress={() => {}}>
             <View style={styles.handle} />
-            <Text style={styles.title}>Koleksiyona kaydet</Text>
+            <Text style={styles.title}>{t('save.title')}</Text>
 
             <Pressable style={styles.newRow} onPress={() => setCreateOpen(true)}>
               <Ionicons name="add" size={22} color={colors.primary} />
-              <Text style={styles.newText}>Yeni koleksiyon</Text>
+              <Text style={styles.newText}>{t('save.newCollection')}</Text>
             </Pressable>
 
             {loading ? (
               <ActivityIndicator style={styles.center} color={colors.primary} />
             ) : error ? (
               <Pressable style={styles.center} onPress={load}>
-                <Text style={styles.errorText}>Yüklenemedi. Tekrar dene.</Text>
+                <Text style={styles.errorText}>{t('save.errorLoad')}</Text>
               </Pressable>
             ) : rows.length === 0 ? (
               <Text style={styles.center}>
-                Henüz koleksiyonun yok. Yukarıdan yeni bir tane oluştur.
+                {t('save.empty')}
               </Text>
             ) : (
               <FlatList

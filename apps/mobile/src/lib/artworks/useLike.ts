@@ -1,5 +1,6 @@
 // src/lib/artworks/useLike.ts
 import { useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { artworkService } from './artworkService';
 import { useLikeContext } from '../../context/LikeContext';
 import { useToast } from '../../context/ToastContext';
@@ -7,6 +8,7 @@ import { useToast } from '../../context/ToastContext';
 // Optimistic beğeni. State LikeContext'te (ortak defter) yaşar —
 // feed ve detay aynı defteri okur, ayrışmazlar.
 export function useLike() {
+    const { t } = useTranslation();
     const { setOverride } = useLikeContext();
     const { showToast } = useToast();
 
@@ -20,10 +22,10 @@ export function useLike() {
                 else await artworkService.unlike(id);
             } catch {
                 setOverride(id, currentIsLiked); // geri al
-                showToast('Beğeni kaydedilemedi', 'error');
+                showToast(t('toast.likeError'), 'error');
             }
         },
-        [setOverride, showToast],
+        [setOverride, showToast, t],
     );
 
     // Çift dokunma: HER ZAMAN beğenir, asla kaldırmaz.
@@ -37,10 +39,10 @@ export function useLike() {
                 await artworkService.like(id);
             } catch {
                 setOverride(id, false);
-                showToast('Beğeni kaydedilemedi', 'error');
+                showToast(t('toast.likeError'), 'error');
             }
         },
-        [setOverride, showToast],
+        [setOverride, showToast, t],
     );
 
     return { toggle, likeOnly };

@@ -1,21 +1,39 @@
 {
+    "nav": {
+        "feed": "Feed",
+        "collections": "Collections",
+        "profile": "Profile"
+    },
     "common": {
         "retry": "Try again",
         "cancel": "Cancel",
         "save": "Save",
-        "loading": "Loading"
+        "loading": "Loading",
+        "back": "Back",
+        "goBack": "Go back",
+        "delete": "Delete",
+        "remove": "Remove",
+        "create": "Create",
+        "error": "Error",
+        "success": "Success"
     },
     "feed": {
         "discover": "Discover",
         "mostLiked": "Most Liked",
         "newest": "Newest",
         "oldest": "Oldest",
-        "dailyArtwork": "Artwork of the Day"
+        "dailyArtwork": "Artwork of the day",
+        "dailyArtworkUpper": "ARTWORK OF THE DAY",
+        "errorLoad": "Couldn't load artworks.",
+        "emptyList": "No artworks yet.",
+        "emptyDiscover": "Nothing to discover.",
+        "reshuffle": "You've seen it all — shuffle again"
     },
     "profile": {
         "collections": "Collections",
         "likes": "Likes",
-        "settings": "Settings"
+        "settings": "Settings",
+        "logout": "Log Out"
     },
     "settings": {
         "title": "Settings",
@@ -24,5 +42,71 @@
         "languageEn": "English",
         "about": "About",
         "aboutBody": "Daily Islamic Art — Discover Islamic art every day. Calligraphy, illumination, miniature, and more."
+    },
+    "search": {
+        "placeholder": "Search artist",
+        "prompt": "Search by artist name",
+        "noResults": "No results for \"{{query}}\""
+    },
+    "auth": {
+        "welcomeTitle": "Daily Islamic Art",
+        "welcomeSubtitle": "Discover a new Islamic artwork every day.",
+        "name": "Name",
+        "email": "Email",
+        "password": "Password",
+        "loginSubmit": "Log In",
+        "loginError": "Login failed. Check your details.",
+        "registerLink": "Don't have an account? Sign up",
+        "registerTitle": "Create Account",
+        "registerSubmit": "Sign Up",
+        "registerError": "Registration failed. Try again.",
+        "loginLink": "Already have an account? Log in",
+        "valAllFields": "Fill in all fields.",
+        "valNameMin": "Name must be at least 2 characters.",
+        "valPasswordMin": "Password must be at least 8 characters."
+    },
+    "collections": {
+        "new": "New",
+        "title": "Collections",
+        "liked": "Liked",
+        "errorLoad": "Couldn't load collection.",
+        "errorLoadLiked": "Couldn't load your likes.",
+        "emptyMessage": "You don't have any collections yet. Add artworks from Discover to start.",
+        "emptyLiked": "You haven't liked any artwork yet.",
+        "emptyDetail": "This collection is empty.",
+        "exploreAction": "Go explore",
+        "notFound": "Collection not found.",
+        "createTitle": "New collection",
+        "namePlaceholder": "Collection name",
+        "createError": "Couldn't create collection.",
+        "deleteTitle": "Delete collection",
+        "deleteMessage": "This collection will be deleted. The artworks themselves are not removed.",
+        "deleteError": "Couldn't delete collection.",
+        "itemCount_one": "{{count}} artwork",
+        "itemCount_other": "{{count}} artworks"
+    },
+    "save": {
+        "title": "Save to collection",
+        "newCollection": "New collection",
+        "errorLoad": "Couldn't load. Try again.",
+        "empty": "You don't have any collections yet. Create one above."
+    },
+    "artwork": {
+        "errorLoad": "Couldn't load artwork.",
+        "notFound": "Artwork not found.",
+        "metaScript": "Script type",
+        "metaPeriod": "Period",
+        "metaMedium": "Medium",
+        "metaDimensions": "Dimensions",
+        "actionDownload": "Download",
+        "removeFromCollectionTitle": "Remove from collection",
+        "removeFromCollectionMessage": "Remove from {{name}}?",
+        "removeError": "Couldn't remove, try again."
+    },
+    "toast": {
+        "downloadSuccess": "Image saved to gallery",
+        "permissionRequired": "Gallery permission required to save",
+        "downloadError": "Download failed, try again",
+        "likeError": "Couldn't save like"
     }
 }

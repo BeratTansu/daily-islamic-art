@@ -1,4 +1,3 @@
-// src/app/(app)/artwork/[slug].tsx
 import { useCallback, useEffect, useState } from 'react';
 import {
   View,
@@ -29,15 +28,12 @@ import { useTranslation } from 'react-i18next';
 
 export default function ArtworkDetailScreen() {
   const { slug } = useLocalSearchParams<{ slug: string }>();
-  const { i18n } = useTranslation();
-  // Aktif dile göre içerik seçimi: TR → transcription, EN → translation.
-  // Yanlış dilde içerikle doldurmuyoruz — yoksa o blok hiç görünmez.
+  const { t, i18n } = useTranslation();
   const isEN = i18n.language === 'en';
   const [artwork, setArtwork] = useState<ArtworkDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [saveOpen, setSaveOpen] = useState(false);
-  // Bu eserin bulunduğu koleksiyonlar (bookmark dolu/boş + 0/1/2+ dallanması için)
   const [memberships, setMemberships] = useState<CollectionMembership[]>([]);
   const [menuVisible, setMenuVisible] = useState(false);
   const [downloading, setDownloading] = useState(false);
@@ -50,68 +46,60 @@ export default function ArtworkDetailScreen() {
       const data = await artworkService.getBySlug(slug);
       setArtwork(data);
     } catch {
-      setError('Eser yüklenemedi.');
+      setError(t('artwork.errorLoad'));
     } finally {
       setLoading(false);
     }
-  }, [slug]);
+  }, [slug, t]);
 
   useEffect(() => {
     load();
   }, [load]);
 
-  // Bu eserin bulunduğu koleksiyonları çek (bookmark durumu + dallanma)
   const loadMemberships = useCallback(async () => {
     if (!artwork) return;
     try {
       const rows = await collectionService.listForArtwork(artwork.id);
       setMemberships(rows);
     } catch {
-      // sessiz — bookmark boş kalır, kullanıcı yine de sheet açabilir
     }
   }, [artwork]);
 
-  // artwork yüklenince membership'i çek
   useEffect(() => {
     loadMemberships();
   }, [loadMemberships]);
 
-  // Bu eserin içinde olduğu koleksiyonlar
   const containing = memberships.filter((m) => m.containsArtwork);
   const isInAnyCollection = containing.length > 0;
 
-  // Bookmark'a basınca 0/1/2+ dallanması
   const handleBookmarkPress = useCallback(() => {
     if (!artwork) return;
     if (containing.length === 1) {
-      // tek koleksiyon → onaylı kısayol (kör silme değil)
       const only = containing[0];
       Alert.alert(
-        'Koleksiyondan çıkar',
-        `"${only.name}" koleksiyonundan çıkarılsın mı?`,
+        t('artwork.removeFromCollectionTitle'),
+        t('artwork.removeFromCollectionMessage', { name: only.name }),
         [
-          { text: 'Vazgeç', style: 'cancel' },
+          { text: t('common.cancel'), style: 'cancel' },
           {
-            text: 'Çıkar',
+            text: t('common.remove'),
             style: 'destructive',
             onPress: async () => {
               try {
                 await collectionService.removeItem(only.id, artwork.id);
-                await loadMemberships(); // bookmark tazelensin
+                await loadMemberships();
               } catch {
-                Alert.alert('Hata', 'Çıkarılamadı, tekrar dene.');
+                Alert.alert(t('common.error'), t('artwork.removeError'));
               }
             },
           },
         ],
       );
     } else {
-      // 0 veya 2+ → sheet aç
       setSaveOpen(true);
     }
-  }, [artwork, containing, loadMemberships]);
+  }, [artwork, containing, loadMemberships, t]);
 
-  // 3. İndir handler — Galeriye indirme işlemini yönetir
   const handleDownload = async () => {
     if (!artwork) return;
     setDownloading(true);
@@ -120,11 +108,11 @@ export default function ArtworkDetailScreen() {
 
     if (result.ok) {
       setMenuVisible(false);
-      Alert.alert('Başarılı', 'Görsel galeriye kaydedildi');
+      Alert.alert(t('common.success'), t('toast.downloadSuccess'));
     } else if (result.reason === 'permission') {
-      Alert.alert('Hata', 'Kaydetmek için galeri izni gerekli');
+      Alert.alert(t('common.error'), t('toast.permissionRequired'));
     } else {
-      Alert.alert('Hata', 'İndirilemedi, tekrar deneyin');
+      Alert.alert(t('common.error'), t('toast.downloadError'));
     }
   };
 
@@ -139,9 +127,9 @@ export default function ArtworkDetailScreen() {
   if (error || !artwork) {
     return (
       <View style={styles.centered}>
-        <Text style={styles.errorText}>{error ?? 'Eser bulunamadı.'}</Text>
+        <Text style={styles.errorText}>{error ?? t('artwork.notFound')}</Text>
         <Pressable style={styles.retryBtn} onPress={load}>
-          <Text style={styles.retryText}>Tekrar dene</Text>
+          <Text style={styles.retryText}>{t('common.retry')}</Text>
         </Pressable>
       </View>
     );
@@ -149,7 +137,6 @@ export default function ArtworkDetailScreen() {
 
   return (
     <>
-      {/* 4. Üç nokta butonu — Stack.Screen headerRight içerisine yerleştirildi */}
       <Stack.Screen
         options={{
           title: artwork.contributors ?? artwork.artist.name,
@@ -186,14 +173,8 @@ export default function ArtworkDetailScreen() {
             </View>
           </View>
 
-          {/* Eserdeki metin — dile göre alan seçimi.
-              TR → transcription, EN → translation. Yanlış dilde içerikle DOLDURMA:
-              aktif dilde uygun alan yoksa o satır çizilmez (yalan içerik göstermeyiz).
-              arabicText + sourceRef dilden bağımsız (orijinal metin / künye). */}
           {(() => {
-            // Aktif dilde gösterilecek metin: EN ise translation, TR ise transcription.
             const localizedText = isEN ? artwork.translation : artwork.transcription;
-            // Blok, en az bir gösterilebilir alan varsa çizilir.
             const hasBlock = artwork.arabicText || localizedText || artwork.sourceRef;
             if (!hasBlock) return null;
             return (
@@ -213,17 +194,15 @@ export default function ArtworkDetailScreen() {
             );
           })()}
 
-          {/* Açıklama */}
           {artwork.description ? (
             <Text style={styles.description}>{artwork.description}</Text>
           ) : null}
 
-          {/* Metadata satırları — sadece dolu olanlar */}
           <View style={styles.metaList}>
-            <MetaRow label="Hat türü" value={artwork.script} />
-            <MetaRow label="Dönem" value={artwork.period} />
-            <MetaRow label="Malzeme" value={artwork.medium} />
-            <MetaRow label="Boyutlar" value={artwork.dimensions} />
+            <MetaRow label={t('artwork.metaScript')} value={artwork.script} />
+            <MetaRow label={t('artwork.metaPeriod')} value={artwork.period} />
+            <MetaRow label={t('artwork.metaMedium')} value={artwork.medium} />
+            <MetaRow label={t('artwork.metaDimensions')} value={artwork.dimensions} />
           </View>
         </View>
       </ScrollView>
@@ -233,18 +212,17 @@ export default function ArtworkDetailScreen() {
         artworkId={artwork.id}
         onClose={() => {
           setSaveOpen(false);
-          loadMemberships(); // sheet kapanınca bookmark durumunu tazele (yol a)
+          loadMemberships();
         }}
       />
 
-      {/* 5. Menü (ActionSheet) — SaveToCollectionSheet'in hemen altına eklendi */}
       <ActionSheet
         visible={menuVisible}
         onClose={() => setMenuVisible(false)}
         items={[
           {
             icon: 'download-outline',
-            label: 'İndir',
+            label: t('artwork.actionDownload'),
             onPress: handleDownload,
             loading: downloading,
           },
@@ -254,9 +232,6 @@ export default function ArtworkDetailScreen() {
   );
 }
 
-// Kalbi kendi okur: LikeContext defteri ?? backend'in isLiked'ı.
-// Ayrı component çünkü aynı `getIsLiked(...)` ifadesi hem çizimde
-// hem onPress'te lazım — tek yerde hesaplansın.
 function DetailLikeButton({ artwork }: { artwork: ArtworkDetail }) {
   const { toggle } = useLike();
   const { getIsLiked } = useLikeContext();
@@ -271,7 +246,6 @@ function DetailLikeButton({ artwork }: { artwork: ArtworkDetail }) {
   );
 }
 
-// Etiketli satır — value null ise hiç render etme
 function MetaRow({ label, value }: { label: string; value: string | null }) {
   if (!value) return null;
   return (

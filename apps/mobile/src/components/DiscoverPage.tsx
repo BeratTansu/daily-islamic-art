@@ -1,9 +1,3 @@
-// src/components/DiscoverPage.tsx
-// Kesfet sekmesi. FeedPage'in kardesi AMA davranisi farkli (bu yuzden ayri component):
-//  1) seed'li shuffle — her app acilisinda + her pull-to-refresh'te YENI seed = yeni sira.
-//  2) refresh = ayni siranin tazelenmesi DEGIL, tamamen yeni karisim.
-//  3) liste bitince "yeniden karistir" footer'i (212 eser sonsuz degil — durust son).
-// Instagram/X Kesfet mantigi: app acilisi basi seed + istedigin an yenile.
 import { useCallback, useEffect, useState } from 'react';
 import {
     View,
@@ -26,10 +20,10 @@ import { colors, spacing, fontSize, fontFamily } from '../constants/theme';
 import { EmptyState } from './EmptyState';
 import { ErrorState } from './ErrorState';
 import { ArtworkCard } from './ArtworkCard';
+import { useTranslation } from 'react-i18next';
 
 const PAGE_LIMIT = 10;
 
-// Backend @IsInt bekler. 0..2e9 arasi int — her cagri farkli sira.
 function makeSeed(): number {
     return Math.floor(Math.random() * 2_000_000_000);
 }
@@ -39,8 +33,7 @@ export function DiscoverPage({
 }: {
     onDailyRefresh: () => Promise<void>;
 }) {
-    // Seed: lazy init → mount'ta BIR KEZ uretilir, oturum boyu sabit.
-    // App yeniden acilinca yeni mount = yeni seed (app-acilisi basi kurali).
+    const { t } = useTranslation();
     const [seed, setSeed] = useState<number>(makeSeed);
 
     const [items, setItems] = useState<ArtworkListItem[]>([]);
@@ -54,9 +47,6 @@ export function DiscoverPage({
     const { toggle, likeOnly } = useLike();
     const { getIsLiked, clear: clearLikeOverrides } = useLikeContext();
 
-    // Ilk sayfa — verilen seed ile (default: mevcut seed).
-    // useSeed param'i: refresh yeni seed uretip HEMEN onu kullanmak icin
-    // (setSeed async, ayni tick'te state guncel degil → seed'i elden gecir).
     const loadFirstPage = useCallback(
         async (useSeed: number) => {
             setError(null);
@@ -71,13 +61,12 @@ export function DiscoverPage({
                 setPage(res.meta.page);
                 setHasMore(res.meta.page < res.meta.pages);
             } catch (e) {
-                setError('Eserler yüklenemedi.');
+                setError(t('feed.errorLoad'));
             }
         },
-        [],
+        [t],
     );
 
-    // Acilis — mevcut seed ile ilk sayfa.
     useEffect(() => {
         let active = true;
         (async () => {
@@ -88,19 +77,15 @@ export function DiscoverPage({
         return () => {
             active = false;
         };
-        // seed'i BILEREK dependency'ye koymuyoruz — seed degisimi SADECE
-        // refresh/reshuffle uzerinden olur, onlar loadFirstPage'i kendi cagirir.
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [loadFirstPage]);
 
-    // Yeni karisim: yeni seed uret, state'e yaz, AYNI seed'le ilk sayfayi cek.
     const reshuffle = useCallback(async () => {
         const yeni = makeSeed();
         setSeed(yeni);
         await loadFirstPage(yeni);
     }, [loadFirstPage]);
 
-    // Pull-to-refresh: yeni karisim + daily tazele.
     const onRefresh = useCallback(async () => {
         setRefreshing(true);
         await Promise.all([reshuffle(), onDailyRefresh()]);
@@ -117,7 +102,7 @@ export function DiscoverPage({
                 page: next,
                 limit: PAGE_LIMIT,
                 sort: 'shuffle',
-                seed, // AYNI seed → sayfalar tutarli (backend deterministik)
+                seed,
             });
             setItems((prev) => {
                 const seen = new Set(prev.map((it) => it.id));
@@ -127,7 +112,6 @@ export function DiscoverPage({
             setPage(res.meta.page);
             setHasMore(res.meta.page < res.meta.pages);
         } catch {
-            // alt sayfa hatasi sessiz
         } finally {
             setLoadingMore(false);
         }
@@ -159,7 +143,8 @@ export function DiscoverPage({
     }
 
     if (error && items.length === 0) {
-        return <ErrorState message={error} onAction={onRefresh} />;
+        // HATA DÜZELTİLDİ: actionLabel eklendi
+        return <ErrorState message={error} onAction={onRefresh} actionLabel={t('common.retry')} />;
     }
 
     return (
@@ -179,15 +164,14 @@ export function DiscoverPage({
                         <ActivityIndicator color={colors.primary} />
                     </View>
                 ) : !hasMore && items.length > 0 ? (
-                    // Liste bitti — 212 eser sonsuz degil, durustce "yeniden karistir".
                     <Pressable style={styles.reshuffleBtn} onPress={reshuffle}>
                         <Ionicons name="shuffle" size={20} color={colors.primary} />
-                        <Text style={styles.reshuffleText}>Hepsini keşfettin — yeniden karıştır</Text>
+                        <Text style={styles.reshuffleText}>{t('feed.reshuffle')}</Text>
                     </Pressable>
                 ) : null
             }
             ListEmptyComponent={
-                <EmptyState icon="compass-outline" message="Keşfedilecek eser yok." />
+                <EmptyState icon="compass-outline" message={t('feed.emptyDiscover')} />
             }
         />
     );

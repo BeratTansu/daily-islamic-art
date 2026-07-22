@@ -32,21 +32,18 @@ import { FeedPage } from '../../../components/FeedPage';
 import { DiscoverPage } from '../../../components/DiscoverPage';
 import { colors, spacing, fontSize, fontWeight, fontFamily } from '../../../constants/theme';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 
-// Kompakt yatay kartin yuksekligi (padding dahil). Kutuphane header'i buraya
-// kadar collapse eder ve durur — kompakt kart hep gorunur kalir (Hedef A).
-// Buyuk kartin yuksekligi SABIT DEGIL: normal akista, kutuphane kendisi olcer.
 const HEADER_MIN = 88;
 
 export default function FeedScreen() {
+    const { t } = useTranslation();
     const [daily, setDaily] = useState<ArtworkDetail | null>(null);
     const [dailyLoading, setDailyLoading] = useState(true);
 
     const { toggle, likeOnly } = useLike();
     const { getIsLiked } = useLikeContext();
 
-    // Daily feed.tsx'te yasar (collapse header'da, siralamadan bagimsiz).
-    // FeedPage pull-to-refresh'i bu fonksiyonu callback ile cagirir.
     const loadDaily = useCallback(async (refresh = false) => {
         try {
             const d = await artworkService.getDaily(refresh);
@@ -74,15 +71,12 @@ export default function FeedScreen() {
         router.push({ pathname: '/artwork/[slug]', params: { slug } });
     }, []);
 
-    // Collapse header artik ayri bir component (DailyHeader) — cunku useCurrentTabScrollY
-    // hook'u Tabs.Container context'i icinde cagrilmali. renderHeader sadece onu render eder.
     const renderHeader = useCallback(() => {
         if (!daily) {
-            // Daily gelmese de arama kapisi kaybolmasin.
             return (
                 <View style={styles.headerContent} pointerEvents="box-none">
                     <View style={styles.searchInHeader}>
-                        <SearchBar onPress={() => router.push('/search')} />
+                        <SearchBar onPress={() => router.push('/search')} placeholder={t('search.placeholder')} />
                     </View>
                 </View>
             );
@@ -96,7 +90,7 @@ export default function FeedScreen() {
                 onDoubleTapLike={likeOnly}
             />
         );
-    }, [daily, getIsLiked, goToDetail, toggle, likeOnly]);
+    }, [daily, getIsLiked, goToDetail, toggle, likeOnly, t]);
 
     return (
         <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['top']}>
@@ -108,16 +102,16 @@ export default function FeedScreen() {
                 minHeaderHeight={HEADER_MIN}
                 headerContainerStyle={styles.headerContainer}
             >
-                <Tabs.Tab name="discover" label="Keşfet">
+                <Tabs.Tab name="discover" label={t('feed.discover')}>
                     <DiscoverPage onDailyRefresh={onDailyRefresh} />
                 </Tabs.Tab>
-                <Tabs.Tab name="mostLiked" label="En Beğenilen">
+                <Tabs.Tab name="mostLiked" label={t('feed.mostLiked')}>
                     <FeedPage sort="mostLiked" onDailyRefresh={onDailyRefresh} />
                 </Tabs.Tab>
-                <Tabs.Tab name="newest" label="En Yeni">
+                <Tabs.Tab name="newest" label={t('feed.newest')}>
                     <FeedPage sort="newest" onDailyRefresh={onDailyRefresh} />
                 </Tabs.Tab>
-                <Tabs.Tab name="oldest" label="En Eski">
+                <Tabs.Tab name="oldest" label={t('feed.oldest')}>
                     <FeedPage sort="oldest" onDailyRefresh={onDailyRefresh} />
                 </Tabs.Tab>
             </Tabs.Container>
@@ -125,7 +119,6 @@ export default function FeedScreen() {
     );
 }
 
-// --- Gorsel jesti (daily kartinda) ---
 function useImageGesture(
     id: string,
     slug: string,
@@ -149,7 +142,6 @@ function useImageGesture(
     }, [id, slug, isLiked, onPress, onDoubleTapLike]);
 }
 
-// --- Kalp + begeni sayisi (daily kartinda) ---
 function LikeMeta({
     id,
     baseCount,
@@ -185,16 +177,10 @@ function DailyHeader({
     onToggleLike: (id: string, isLiked: boolean) => void;
     onDoubleTapLike: (id: string, isLiked: boolean) => void;
 }) {
-    // top: header'in anlik kaydirma degeri (0 → -(yukseklik - HEADER_MIN)).
-    // height: header'in OLCULMUS yuksekligi. Animasyonu scrollY degil BU surer:
-    // collapse'in gercegine kilitli → tab degisince zipla/yarim kalma olmaz.
+    const { t } = useTranslation();
     const { top, height } = useHeaderMeasurements();
-
-    // Kompakt kart gorunmezken dokunmayi calmasin diye pointerEvents state'i.
-    // Worklet'ten React state'e gecis runOnJS ile (REFERANS kurali).
     const [compactActive, setCompactActive] = useState(false);
 
-    // 0 → 1 collapse ilerlemesi.
     const progress = useDerivedValue(() => {
         const total = (height ?? 0) - HEADER_MIN;
         if (total <= 0) return 0;
@@ -232,16 +218,13 @@ function DailyHeader({
 
     return (
         <View style={styles.headerContent} pointerEvents="box-none">
-            {/* Arama: header'in en ustunde, normal akista. Fade OLMAZ — header'la
-                beraber yukari kayar, collapsed'da gorunmez, en uste donunce gelir. */}
             <View style={styles.searchInHeader}>
-                <SearchBar onPress={() => router.push('/search')} />
+                <SearchBar onPress={() => router.push('/search')} placeholder={t('search.placeholder')} />
             </View>
 
-            {/* Buyuk kart: NORMAL AKISTA (absolute degil) → header dogal yuksekligini
-                bundan alir, kutuphane dogru olcer. Scroll'la sadece soner. */}
             <Animated.View style={bigStyle} pointerEvents={compactActive ? 'none' : 'box-none'}>
-                <Text style={styles.dailyLabel}>Günün Eseri</Text>
+                {/* Uppercase textTransform kaldırıldı, JSON key üzerinden manuel besleniyor */}
+                <Text style={styles.dailyLabel}>{t('feed.dailyArtworkUpper')}</Text>
                 <DailyCard
                     daily={daily}
                     isLiked={isLiked}
@@ -256,8 +239,6 @@ function DailyHeader({
                 </View>
             </Animated.View>
 
-            {/* Kompakt kart: absolute EN ALTTA. Collapse bitince gorunur kalan serit
-                tam bu — HEADER_MIN yuksekligindeki alt kisim. */}
             <Animated.View
                 style={[styles.compactLayer, compactStyle]}
                 pointerEvents={compactActive ? 'box-none' : 'none'}
@@ -273,7 +254,6 @@ function DailyHeader({
     );
 }
 
-// Kompakt daily: kucuk yatay kart (thumbnail + isim + kalp). Buyuk kartin morph hedefi.
 function CompactDailyCard({
     daily,
     isLiked,
@@ -285,6 +265,7 @@ function CompactDailyCard({
     onPress: (slug: string) => void;
     onToggleLike: (id: string, isLiked: boolean) => void;
 }) {
+    const { t } = useTranslation();
     return (
         <Pressable style={styles.compactCard} onPress={() => onPress(daily.slug)}>
             <Image
@@ -296,7 +277,7 @@ function CompactDailyCard({
                 <Text style={styles.compactArtist} numberOfLines={1}>
                     {daily.artist.name}
                 </Text>
-                <Text style={styles.compactLabel}>Bugünün eseri</Text>
+                <Text style={styles.compactLabel}>{t('feed.dailyArtwork')}</Text>
             </View>
             <LikeMeta
                 id={daily.id}
@@ -309,7 +290,6 @@ function CompactDailyCard({
     );
 }
 
-// --- Gunun eseri karti ---
 function DailyCard({
     daily,
     isLiked,
@@ -362,7 +342,6 @@ const styles = StyleSheet.create({
     },
     headerContainer: {
         backgroundColor: colors.background,
-        // Collapse header'in golge/border'i yok — krem zemine kaynasin.
         elevation: 0,
         shadowOpacity: 0,
     },
@@ -370,7 +349,6 @@ const styles = StyleSheet.create({
         paddingHorizontal: spacing.md,
         paddingTop: spacing.sm,
     },
-    // Kompakt kart en altta — header collapse olunca bu kisim gorunur kalir.
     compactLayer: {
         position: 'absolute',
         bottom: spacing.sm,
@@ -413,7 +391,7 @@ const styles = StyleSheet.create({
         color: colors.accent,
         fontSize: fontSize.caption,
         fontWeight: fontWeight.semibold,
-        textTransform: 'uppercase',
+        // textTransform: 'uppercase' KALDIRILDI - uppercase tuzağı için
         letterSpacing: 2,
         marginBottom: spacing.sm,
     },

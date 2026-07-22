@@ -17,10 +17,12 @@ import { colors, spacing } from '../../../constants/theme';
 import { useNavigationGuard } from '../../../lib/hooks/useNavigationGuard';
 import { EmptyState } from '../../../components/EmptyState';
 import { ErrorState } from '../../../components/ErrorState';
+import { useTranslation } from 'react-i18next';
 
 const PAGE_LIMIT = 30;
 
 export default function LikedScreen() {
+    const { t } = useTranslation();
     const guardNavigate = useNavigationGuard();
     const [items, setItems] = useState<ArtworkListItem[]>([]);
     const [total, setTotal] = useState(0);
@@ -39,11 +41,10 @@ export default function LikedScreen() {
             setPage(res.meta.page);
             setHasMore(res.meta.page < res.meta.pages);
         } catch {
-            setError('Beğendiklerin yüklenemedi.');
+            setError(t('collections.errorLoadLiked'));
         }
-    }, []);
+    }, [t]);
 
-    // Odaklanınca tazele: feed/detayda beğeni değişmiş olabilir → geri gelince güncel.
     useFocusEffect(
         useCallback(() => {
             let active = true;
@@ -58,7 +59,6 @@ export default function LikedScreen() {
         }, [loadFirstPage]),
     );
 
-    // Sonsuz kaydırma — feed'deki çift-fetch guard'ının aynısı.
     const loadMore = useCallback(async () => {
         if (loadingMore || !hasMore || loading) return;
         setLoadingMore(true);
@@ -69,7 +69,6 @@ export default function LikedScreen() {
             setPage(res.meta.page);
             setHasMore(res.meta.page < res.meta.pages);
         } catch {
-            // alt sayfa hatası sessiz
         } finally {
             setLoadingMore(false);
         }
@@ -88,21 +87,23 @@ export default function LikedScreen() {
     }
 
     if (error && items.length === 0) {
-        return <ErrorState message={error} onAction={loadFirstPage} />;
+        // HATA DÜZELTİLDİ: actionLabel eklendi
+        return <ErrorState message={error} onAction={loadFirstPage} actionLabel={t('common.retry')} />;
     }
 
     const header = (
         <View style={styles.header}>
-            <Text style={styles.title}>Beğendiklerim</Text>
-            <Text style={styles.count}>{total} eser</Text>
+            <Text style={styles.title}>{t('collections.liked')}</Text>
+            {/* HATA DÜZELTİLDİ: t() fonksiyon parametre sırası düzeltildi */}
+            <Text style={styles.count}>{t('collections.itemCount', { count: total })}</Text>
         </View>
     );
 
     const empty = (
         <EmptyState
             icon="heart-outline"
-            message="Henüz beğendiğin bir eser yok."
-            actionLabel="Keşfet'e git"
+            message={t('collections.emptyLiked')}
+            actionLabel={t('collections.exploreAction')}
             onAction={() => router.push('/(app)/(tabs)/feed')}
         />
     );

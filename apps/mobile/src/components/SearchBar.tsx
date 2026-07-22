@@ -9,7 +9,7 @@ type SearchBarProps = {
 
 // Kapı: gerçek input değil. Dokununca arama ekranına götürür.
 // Feed'i iki-modlu yapmamak için burada yazılamaz (B kararı).
-export function SearchBar({ onPress, placeholder = 'Sanatçı ara' }: SearchBarProps) {
+export function SearchBar({ onPress, placeholder }: SearchBarProps) {
     return (
         <Pressable onPress={onPress} style={styles.bar}>
             <Ionicons name="search" size={18} color={colors.textMuted} />

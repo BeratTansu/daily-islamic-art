@@ -12,8 +12,10 @@ import {
 import { useAuth } from '../context/AuthContext';
 import { colors, spacing, fontFamily } from '../constants/theme';
 import { router } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 
 export default function Login() {
+    const { t } = useTranslation();
     const { signIn } = useAuth();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -21,14 +23,14 @@ export default function Login() {
     const [submitting, setSubmitting] = useState(false);
 
     async function handleSubmit() {
-        if (submitting) return; // çift tıklama koruması
+        if (submitting) return;
         setError(null);
         setSubmitting(true);
         try {
             await signIn(email.trim(), password);
-            router.replace('/feed'); // status authenticated oldu; imperatif yönlendir
+            router.replace('/feed');
         } catch (e) {
-            setError(e instanceof Error ? e.message : 'Giriş başarısız. Bilgileri kontrol et.');
+            setError(e instanceof Error ? e.message : t('auth.loginError'));
         } finally {
             setSubmitting(false);
         }
@@ -45,14 +47,14 @@ export default function Login() {
                     disabled={submitting}
                     style={styles.backButton}
                 >
-                    <Text style={styles.backButtonText}>← Geri</Text>
+                    <Text style={styles.backButtonText}>← {t('common.back')}</Text>
                 </TouchableOpacity>
 
-                <Text style={styles.title}>Daily Islamic Art</Text>
+                <Text style={styles.title}>{t('auth.welcomeTitle')}</Text>
 
                 <TextInput
                     style={styles.input}
-                    placeholder="E-posta"
+                    placeholder={t('auth.email')}
                     placeholderTextColor={colors.textMuted}
                     value={email}
                     onChangeText={setEmail}
@@ -64,7 +66,7 @@ export default function Login() {
 
                 <TextInput
                     style={styles.input}
-                    placeholder="Şifre"
+                    placeholder={t('auth.password')}
                     placeholderTextColor={colors.textMuted}
                     value={password}
                     onChangeText={setPassword}
@@ -84,7 +86,7 @@ export default function Login() {
                     {submitting ? (
                         <ActivityIndicator color="#fff" />
                     ) : (
-                        <Text style={styles.buttonText}>Giriş Yap</Text>
+                        <Text style={styles.buttonText}>{t('auth.loginSubmit')}</Text>
                     )}
                 </TouchableOpacity>
 
@@ -93,7 +95,7 @@ export default function Login() {
                     disabled={submitting}
                     style={styles.linkWrapper}
                 >
-                    <Text style={styles.link}>Hesabın yok mu? Kayıt ol</Text>
+                    <Text style={styles.link}>{t('auth.registerLink')}</Text>
                 </TouchableOpacity>
             </View>
         </KeyboardAvoidingView>

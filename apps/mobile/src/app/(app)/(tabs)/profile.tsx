@@ -33,7 +33,6 @@ export default function Profile() {
             let active = true;
             (async () => {
                 try {
-                    // Üçü paralel: kullanıcı bilgisi + beğeni sayısı + koleksiyon sayısı.
                     const [me, liked, collections] = await Promise.all([
                         AuthService.me(),
                         artworkService.listLiked({ limit: 1 }),
@@ -44,7 +43,6 @@ export default function Profile() {
                     setLikeCount(liked.meta.total);
                     setCollectionCount(collections.length);
                 } catch {
-                    /* bilgi gelmezse ekran yine çalışır, çıkış butonu erişilebilir kalır */
                 }
             })();
             return () => {
@@ -57,9 +55,9 @@ export default function Profile() {
         if (signingOut) return;
         setSigningOut(true);
         try {
-            await signOut(); // guard reaktif olarak welcome'a atar
+            await signOut();
         } catch {
-            setSigningOut(false); // başarısızsa butonu geri aç
+            setSigningOut(false);
         }
     }
 
@@ -68,7 +66,6 @@ export default function Profile() {
 
     return (
         <View style={[styles.container, { paddingTop: insets.top + spacing.md }]}>
-            {/* Sağ üst — ayarlar dişlisi (header çubuğu yok, serbest ikon) */}
             <View style={styles.topBar}>
                 <TouchableOpacity
                     onPress={() => router.push('/settings')}
@@ -80,12 +77,10 @@ export default function Profile() {
             </View>
 
             <View style={styles.top}>
-                {/* Avatar — baş harf */}
                 <View style={styles.avatar}>
                     <Text style={styles.avatarText}>{initial}</Text>
                 </View>
 
-                {/* Ad + email */}
                 {user ? (
                     <>
                         <Text style={styles.name}>{user.displayName}</Text>
@@ -95,7 +90,6 @@ export default function Profile() {
                     <ActivityIndicator color={colors.primary} style={{ marginTop: spacing.md }} />
                 )}
 
-                {/* İstatistik */}
                 <View style={styles.stats}>
                     <View style={styles.statItem}>
                         <Text style={styles.statNumber}>
@@ -113,7 +107,6 @@ export default function Profile() {
                 </View>
             </View>
 
-            {/* Alt: çıkış + versiyon */}
             <View style={[styles.bottom, { paddingBottom: insets.bottom + spacing.lg }]}>
                 <TouchableOpacity
                     style={[styles.signOutButton, signingOut && styles.buttonDisabled]}
@@ -123,7 +116,7 @@ export default function Profile() {
                     {signingOut ? (
                         <ActivityIndicator color={colors.danger} />
                     ) : (
-                        <Text style={styles.signOutText}>Çıkış Yap</Text>
+                        <Text style={styles.signOutText}>{t('profile.logout')}</Text>
                     )}
                 </TouchableOpacity>
 

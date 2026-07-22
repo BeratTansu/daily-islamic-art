@@ -2,18 +2,13 @@ import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { colors, spacing, fontSize, fontWeight } from '../constants/theme';
 
 type Props = {
-  // Opsiyonel — verilmezse genel mesaj. feed/[id]/liked mesaj geçer, search geçmez.
-  message?: string;
-  // Buton etiketi — default retry. [id]'de "Geri dön" ile override edilir.
-  actionLabel?: string;
+  // Zorunlu — çağıran ekran t() ile besler (i18n sızıntısı olmasın diye default yok).
+  message: string;
+  actionLabel: string;
   onAction: () => void;
 };
 
-export function ErrorState({
-  message = 'Bir şeyler ters gitti.',
-  actionLabel = 'Tekrar dene',
-  onAction,
-}: Props) {
+export function ErrorState({ message, actionLabel, onAction }: Props) {
   return (
     <View style={styles.wrap}>
       <Text style={styles.message}>{message}</Text>
