@@ -1,5 +1,7 @@
 import { useCallback, useState } from 'react';
-import { useFocusEffect } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import {
     ActivityIndicator,
     StyleSheet,
@@ -18,6 +20,8 @@ import { colors, spacing, fontSize, fontWeight, fontFamily } from '../../../cons
 export default function Profile() {
     const { signOut } = useAuth();
     const insets = useSafeAreaInsets();
+    const router = useRouter();
+    const { t } = useTranslation();
 
     const [user, setUser] = useState<AuthUser | null>(null);
     const [likeCount, setLikeCount] = useState<number | null>(null);
@@ -63,7 +67,18 @@ export default function Profile() {
     const version = Constants.expoConfig?.version ?? '1.0.0';
 
     return (
-        <View style={[styles.container, { paddingTop: insets.top + spacing.xl }]}>
+        <View style={[styles.container, { paddingTop: insets.top + spacing.md }]}>
+            {/* Sağ üst — ayarlar dişlisi (header çubuğu yok, serbest ikon) */}
+            <View style={styles.topBar}>
+                <TouchableOpacity
+                    onPress={() => router.push('/settings')}
+                    hitSlop={8}
+                    accessibilityLabel={t('profile.settings')}
+                >
+                    <Ionicons name="settings-outline" size={24} color={colors.text} />
+                </TouchableOpacity>
+            </View>
+
             <View style={styles.top}>
                 {/* Avatar — baş harf */}
                 <View style={styles.avatar}>
@@ -86,14 +101,14 @@ export default function Profile() {
                         <Text style={styles.statNumber}>
                             {likeCount ?? '—'}
                         </Text>
-                        <Text style={styles.statLabel}>Beğeni</Text>
+                        <Text style={styles.statLabel}>{t('profile.likes')}</Text>
                     </View>
                     <View style={styles.statDivider} />
                     <View style={styles.statItem}>
                         <Text style={styles.statNumber}>
                             {collectionCount ?? '—'}
                         </Text>
-                        <Text style={styles.statLabel}>Koleksiyon</Text>
+                        <Text style={styles.statLabel}>{t('profile.collections')}</Text>
                     </View>
                 </View>
             </View>
@@ -124,6 +139,10 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         backgroundColor: colors.background,
         paddingHorizontal: spacing.lg,
+    },
+    topBar: {
+        alignItems: 'flex-end',
+        marginBottom: spacing.md,
     },
     top: {
         alignItems: 'center',

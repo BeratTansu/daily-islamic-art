@@ -25,9 +25,14 @@ import { SaveToCollectionSheet } from '../../../components/SaveToCollectionSheet
 import { colors, spacing, fontSize, fontWeight, fontFamily } from '../../../constants/theme';
 import { ActionSheet } from '../../../components/ActionSheet';
 import { downloadImageToGallery } from '../../../lib/media/downloadImage';
+import { useTranslation } from 'react-i18next';
 
 export default function ArtworkDetailScreen() {
   const { slug } = useLocalSearchParams<{ slug: string }>();
+  const { i18n } = useTranslation();
+  // Aktif dile göre içerik seçimi: TR → transcription, EN → translation.
+  // Yanlış dilde içerikle doldurmuyoruz — yoksa o blok hiç görünmez.
+  const isEN = i18n.language === 'en';
   const [artwork, setArtwork] = useState<ArtworkDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -181,23 +186,32 @@ export default function ArtworkDetailScreen() {
             </View>
           </View>
 
-          {/* Eserdeki metin — alanlardan biri bile doluysa göster (arabicText'e bağlı değil) */}
-          {artwork.arabicText || artwork.transcription || artwork.translation || artwork.sourceRef ? (
-            <View style={styles.textBlock}>
-              {artwork.arabicText ? (
-                <Text style={styles.arabic}>{artwork.arabicText}</Text>
-              ) : null}
-              {artwork.transcription ? (
-                <Text style={styles.transcription}>{artwork.transcription}</Text>
-              ) : null}
-              {artwork.translation ? (
-                <Text style={styles.translation}>{artwork.translation}</Text>
-              ) : null}
-              {artwork.sourceRef ? (
-                <Text style={styles.sourceRef}>{artwork.sourceRef}</Text>
-              ) : null}
-            </View>
-          ) : null}
+          {/* Eserdeki metin — dile göre alan seçimi.
+              TR → transcription, EN → translation. Yanlış dilde içerikle DOLDURMA:
+              aktif dilde uygun alan yoksa o satır çizilmez (yalan içerik göstermeyiz).
+              arabicText + sourceRef dilden bağımsız (orijinal metin / künye). */}
+          {(() => {
+            // Aktif dilde gösterilecek metin: EN ise translation, TR ise transcription.
+            const localizedText = isEN ? artwork.translation : artwork.transcription;
+            // Blok, en az bir gösterilebilir alan varsa çizilir.
+            const hasBlock = artwork.arabicText || localizedText || artwork.sourceRef;
+            if (!hasBlock) return null;
+            return (
+              <View style={styles.textBlock}>
+                {artwork.arabicText ? (
+                  <Text style={styles.arabic}>{artwork.arabicText}</Text>
+                ) : null}
+                {localizedText ? (
+                  <Text style={isEN ? styles.translation : styles.transcription}>
+                    {localizedText}
+                  </Text>
+                ) : null}
+                {artwork.sourceRef ? (
+                  <Text style={styles.sourceRef}>{artwork.sourceRef}</Text>
+                ) : null}
+              </View>
+            );
+          })()}
 
           {/* Açıklama */}
           {artwork.description ? (

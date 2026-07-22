@@ -1,0 +1,28 @@
+{
+    "common": {
+        "retry": "Try again",
+        "cancel": "Cancel",
+        "save": "Save",
+        "loading": "Loading"
+    },
+    "feed": {
+        "discover": "Discover",
+        "mostLiked": "Most Liked",
+        "newest": "Newest",
+        "oldest": "Oldest",
+        "dailyArtwork": "Artwork of the Day"
+    },
+    "profile": {
+        "collections": "Collections",
+        "likes": "Likes",
+        "settings": "Settings"
+    },
+    "settings": {
+        "title": "Settings",
+        "language": "Language",
+        "languageTr": "Turkish",
+        "languageEn": "English",
+        "about": "About",
+        "aboutBody": "Daily Islamic Art — Discover Islamic art every day. Calligraphy, illumination, miniature, and more."
+    }
+}

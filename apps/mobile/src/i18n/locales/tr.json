@@ -1,0 +1,28 @@
+{
+    "common": {
+        "retry": "Tekrar dene",
+        "cancel": "İptal",
+        "save": "Kaydet",
+        "loading": "Yükleniyor"
+    },
+    "feed": {
+        "discover": "Keşfet",
+        "mostLiked": "En Beğenilen",
+        "newest": "En Yeni",
+        "oldest": "En Eski",
+        "dailyArtwork": "Günün Eseri"
+    },
+    "profile": {
+        "collections": "Koleksiyonlar",
+        "likes": "Beğeniler",
+        "settings": "Ayarlar"
+    },
+    "settings": {
+        "title": "Ayarlar",
+        "language": "Dil",
+        "languageTr": "Türkçe",
+        "languageEn": "İngilizce",
+        "about": "Hakkında",
+        "aboutBody": "Daily Islamic Art — İslam sanatını her gün keşfedin. Hat, tezhip, minyatür ve daha fazlası."
+    }
+}

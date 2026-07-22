@@ -7,6 +7,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import type { TabBarProps } from 'react-native-collapsible-tab-view';
 import { colors, spacing, fontSize, fontWeight } from '../constants/theme';
+import { useTranslation } from 'react-i18next';
 
 const TAB_COUNT = 4;
 
@@ -16,6 +17,8 @@ export function SortTabBar({
     tabNames,
     onTabPress,
 }: TabBarProps) {
+    const { t } = useTranslation();
+
     // Bar'in IC genisligini olc (padding sonrasi). Indicator bunun uzerinden
     // hesaplanir — Dimensions.get degil, cunku padding/rotasyon yalan soyler.
     const [innerWidth, setInnerWidth] = useState(0);
@@ -53,7 +56,7 @@ export function SortTabBar({
                             <TabLabel
                                 indexDecimal={indexDecimal}
                                 position={i}
-                                label={LABELS[name] ?? name}
+                                label={LABEL_KEYS[name] ? t(LABEL_KEYS[name]) : name}
                             />
                         </Pressable>
                     );
@@ -63,13 +66,15 @@ export function SortTabBar({
     );
 }
 
-// Sekme adi → gorunen etiket. feed.tsx'teki Tab name'leriyle BIREBIR eslesmeli.
-const LABELS: Record<string, string> = {
-    discover: 'Keşfet',
-    mostLiked: 'En Beğenilen',
-    newest: 'En Yeni',
-    oldest: 'En Eski',
+// Sekme adi → çeviri key'i. feed.tsx'teki Tab name'leriyle BIREBIR eslesmeli.
+// Değer artık düz string değil, i18n key'i — çeviri render'da t() ile çözülür.
+const LABEL_KEYS: Record<string, string> = {
+    discover: 'feed.discover',
+    mostLiked: 'feed.mostLiked',
+    newest: 'feed.newest',
+    oldest: 'feed.oldest',
 };
+
 // Etiket rengi indexDecimal'e gore interpolate — aktife yaklastikca
 // textMuted'tan primary'ye gecer. Boylece renk de smooth akar.
 function TabLabel({
