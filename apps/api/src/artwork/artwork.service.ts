@@ -31,6 +31,20 @@ export class ArtworkService {
 
     constructor(private prisma: PrismaService, private redis: RedisService) { }
 
+    /**
+     * Public gorunurluk invariant'i — TEK KAYNAK.
+     * Bir eser feed/daily/detay/liked/koleksiyonda gorunur olmasi icin:
+     *   1. admin engellememis  (isPublished: true)
+     *   2. yayin tarihi gelmis  (publishAt <= now)
+     * Iki sart AND'lenir. Getter → new Date() her cagrida taze now().
+     * Admin yollari (findAllAdmin, findOneBySlugAdmin) BU getter'i KULLANMAZ:
+     * admin taslaklari + gelecek-tarihli eserleri gorebilmeli.
+     * Raw SQL (shuffle) bu objeyi kullanamaz → orada elle yazilir.
+     */
+    private get publicVisibilityWhere(): Prisma.ArtworkWhereInput {
+        return { isPublished: true, publishAt: { lte: new Date() } };
+    }
+
     private slugify(input: string): string {
         return input
             .toLowerCase()
@@ -125,7 +139,7 @@ export class ArtworkService {
         }
 
         const where: Prisma.ArtworkWhereInput = {
-            isPublished: true,
+            ...this.publicVisibilityWhere,
             ...(type && { type }),
             ...(script && { script }),
             ...(artistId && { artistId }),
@@ -153,7 +167,7 @@ export class ArtworkService {
             //    isPublished BURADA da sart (invariant — raw SQL otomatik koymaz).
             const orderedIds = await this.prisma.$queryRaw<Array<{ id: string }>>`
                 SELECT id FROM "Artwork"
-                WHERE "isPublished" = true
+                WHERE "isPublished" = true AND "publishAt" <= NOW()
                 ORDER BY md5(id || ${query.seed}::text)
                 LIMIT ${limit} OFFSET ${(page - 1) * limit}
             `;
@@ -287,7 +301,7 @@ export class ArtworkService {
 
         const manualFeatured = await this.prisma.artwork.findFirst({
             where: {
-                isPublished: true,
+                ...this.publicVisibilityWhere,
                 featuredAt: { gte: startOfToday, lt: startOfTomorrow },
             },
             orderBy: { featuredAt: 'desc' },
@@ -300,7 +314,7 @@ export class ArtworkService {
         } else {
             // 2) Fallback: tarihe göre deterministik seçim
             const total = await this.prisma.artwork.count({
-                where: { isPublished: true },
+                where: this.publicVisibilityWhere,
             });
 
             if (total === 0) throw new NotFoundException('Yayında eser yok');
@@ -309,7 +323,7 @@ export class ArtworkService {
             const index = dayOfYear % total;
 
             const [daily] = await this.prisma.artwork.findMany({
-                where: { isPublished: true },
+                where: this.publicVisibilityWhere,
                 orderBy: { createdAt: 'asc' },
                 skip: index,
                 take: 1,
@@ -338,7 +352,7 @@ export class ArtworkService {
 
         const where = {
             userId,
-            artwork: { isPublished: true },
+            artwork: this.publicVisibilityWhere,
         };
 
         const [likes, total] = await this.prisma.$transaction([
@@ -370,7 +384,7 @@ export class ArtworkService {
 
     async findOneBySlug(slug: string, userId: string) {
         const artwork = await this.prisma.artwork.findFirst({
-            where: { slug, isPublished: true },
+            where: { slug, ...this.publicVisibilityWhere },
             include: {
                 artist: true,
                 _count: { select: { likes: true } },
@@ -536,8 +550,12 @@ export class ArtworkService {
         // Shuffle'da seed key'e GIRER: her seed farkli sira = farkli cache.
         // Sadece shuffle'da eklenir → normal sort'larin mevcut key'i bozulmaz.
         const seedPart = sort === ArtworkSort.SHUFFLE ? `|seed=${query.seed ?? ''}` : '';
+        // Gun anahtari key'e GIRER: publishAt <= now() sorgusu zamana bagli →
+        // gun donunce (TR 00:00 sonrasi yeni eser girer) key degisir, cache taze hesaplanir.
+        // Yoksa yeni eser TTL (5 dk) kadar gec gorunurdu. getTodayKey mevcut helper.
+        const day = this.getTodayKey();
         // Alanlar HEP aynı sırada — deterministik key garantisi
-        return `artworks:feed:type=${type}|script=${script}|artistId=${artistId}|sort=${sort}${seedPart}|page=${page}|limit=${limit}`;
+        return `artworks:feed:day=${day}|type=${type}|script=${script}|artistId=${artistId}|sort=${sort}${seedPart}|page=${page}|limit=${limit}`;
     }
 
     /** Artwork verisi değişince feed + daily cache'ini temizler. */

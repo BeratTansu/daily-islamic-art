@@ -78,6 +78,7 @@ model Artwork {
 
   // Yayın
   isPublished Boolean   @default(true)
+  publishAt   DateTime? @db.Timestamptz(6) // yayına girme eşiği (TR 00:00); null = sıraya girmemiş
   featuredAt  DateTime? // "günün eseri"
   createdAt   DateTime  @default(now())
 
@@ -88,6 +89,7 @@ model Artwork {
 
   @@index([type])
   @@index([featuredAt])
+  @@index([publishAt])
 }
 
 enum ArtworkType {
