@@ -20,7 +20,14 @@ import {
     findAll(@Query() query: QueryArtistDto) {
       return this.artistService.findAll(query);
     }
-  
+
+    // STATIK route — :slug'tan ONCE gelmeli (yoksa "by-id" slug sanilir).
+    // Combobox edit modunda secili artistId'nin adini cekmek icin.
+    @Get('by-id/:id')
+    findOneById(@Param('id') id: string) {
+      return this.artistService.findOneById(id);
+    }
+
     @Get(':slug')
     findOne(@Param('slug') slug: string) {
       return this.artistService.findOneBySlug(slug);

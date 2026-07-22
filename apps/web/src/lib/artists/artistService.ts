@@ -2,6 +2,14 @@ import { ApiClient } from '../auth/apiClient';
 
 // ── Tipler: backend kontratının client'taki tek kaynağı ──
 
+// Combobox / dropdown icin dar tip. by-id endpoint'i tam bunu doner
+// ({id, name, slug}) — bio/era/country yok. "Dar tip = az varsayim".
+export interface ArtistRef {
+  id: string;
+  name: string;
+  slug: string;
+}
+
 export interface Artist {
   id: string;
   name: string;
@@ -70,6 +78,19 @@ export const ArtistService = {
   // Not: backend GET /artists/:slug ile getiriyor (id değil slug).
   getBySlug(slug: string): Promise<Artist> {
     return ApiClient.get<Artist>(`/artists/${slug}`);
+  },
+
+  // Combobox aramasi: isimde arar (backend findAll ?q= → name contains insensitive).
+  // limit kucuk: dropdown'da 10-15 sonuc yeter, fazlasi gereksiz yuk.
+  search(q: string, limit = 12): Promise<ArtistListResponse> {
+    const qs = new URLSearchParams({ q, limit: String(limit) });
+    return ApiClient.get<ArtistListResponse>(`/artists?${qs.toString()}`);
+  },
+
+  // Combobox edit modu: secili artistId'nin adini cekmek icin (id ile tek sanatci).
+  // GET /artists/by-id/:id → {id, name, slug} (ArtistRef).
+  getById(id: string): Promise<ArtistRef> {
+    return ApiClient.get<ArtistRef>(`/artists/by-id/${id}`);
   },
 
   create(input: CreateArtistInput): Promise<Artist> {

@@ -73,6 +73,16 @@ export class ArtistService {
         return artist;
     }
 
+    async findOneById(id: string) {
+        const artist = await this.prisma.artist.findUnique({
+            where: { id },
+            // dropdown icin sadece id+name yeter; artworks include ETME (gereksiz yuk)
+            select: { id: true, name: true, slug: true },
+        });
+        if (!artist) throw new NotFoundException('Sanatçı bulunamadı');
+        return artist;
+    }
+
     async update(id: string, dto: UpdateArtistDto) {
         await this.ensureExists(id);
         try {

@@ -7,8 +7,8 @@ import {
     type CreateArtworkInput,
     type ArtworkType,
 } from '@/lib/artworks/artworkService';
-import { ArtistService, type Artist } from '@/lib/artists/artistService';
 import { ApiError } from '@/lib/auth/apiClient';
+import { ArtistCombobox } from '@/components/ArtistCombobox';
 
 // Tür seçenekleri — enum + Türkçe label (tablo ile aynı map mantığı).
 const TYPE_OPTIONS: { value: ArtworkType; label: string }[] = [
@@ -60,18 +60,6 @@ export function ArtworkForm({ mode, artworkId, initial, initialImageUrl }: Artwo
     const [file, setFile] = useState<File | null>(null);
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
-
-    // Sanatçı dropdown'u için liste
-    const [artists, setArtists] = useState<Artist[]>([]);
-    const [artistsError, setArtistsError] = useState<string | null>(null);
-
-    useEffect(() => {
-        ArtistService.list({ limit: 50 })
-            .then((res) => setArtists(res.items))
-            .catch((e) =>
-                setArtistsError(e instanceof ApiError ? e.message : 'Sanatçılar yüklenemedi.'),
-            );
-    }, []);
 
     function handleChange<K extends keyof ArtworkFormState>(
         field: K,
@@ -165,24 +153,13 @@ export function ArtworkForm({ mode, artworkId, initial, initialImageUrl }: Artwo
             )}
 
             <div className="space-y-4">
-                {/* Sanatçı dropdown */}
+                {/* Sanatçı combobox (aramali — 690 sanatci, veri kaybi fix) */}
                 <Field label="Sanatçı *">
-                    {artistsError ? (
-                        <p className="text-sm text-red-600">{artistsError}</p>
-                    ) : (
-                        <select
-                            value={form.artistId}
-                            onChange={(e) => handleChange('artistId', e.target.value)}
-                            className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm"
-                        >
-                            <option value="">— Sanatçı seç —</option>
-                            {artists.map((a) => (
-                                <option key={a.id} value={a.id}>
-                                    {a.name}
-                                </option>
-                            ))}
-                        </select>
-                    )}
+                    <ArtistCombobox
+                        value={form.artistId}
+                        onChange={(id) => handleChange('artistId', id)}
+                        disabled={submitting}
+                    />
                 </Field>
 
                 {/* Tür dropdown */}
