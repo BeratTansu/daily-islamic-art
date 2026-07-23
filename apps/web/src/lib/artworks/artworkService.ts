@@ -30,6 +30,7 @@ export interface Artwork {
   thumbUrl: string | null;
   colorPalette: unknown | null; // JSONB; admin panelde düzenlenmiyor
   isPublished: boolean;
+  publishAt: string | null;     // yayina girme esigi (ISO). null = siraya girmemis.
   featuredAt: string | null;    // read-only burada; set etme toggle adımında (backend değişikliği)
   createdAt: string;
   // Liste endpoint'i include ile nested artist döner; detay (findOneBySlug) full artist dönebilir
@@ -97,6 +98,16 @@ export interface UploadResult {
   thumbUrl: string | null;
 }
 
+// Admin dashboard sayimlari (GET /artworks/admin/stats)
+export interface AdminStats {
+  total: number;
+  published: number;
+  queued: number;
+  draft: number;
+  artists: number;
+  queueEndsAt: string | null; // ISO; null = kuyruk bos
+}
+
 // ── Servis: sadece HTTP + tipli response. UI/state yok. ──
 
 export const ArtworkService = {
@@ -121,6 +132,10 @@ export const ArtworkService = {
     if (params.q) qs.set('q', params.q);
     const query = qs.toString();
     return ApiClient.get<ArtworkListResponse>(`/artworks/admin${query ? `?${query}` : ''}`);
+  },
+
+  getAdminStats(): Promise<AdminStats> {
+    return ApiClient.get<AdminStats>('/artworks/admin/stats');
   },
 
   // Not: backend GET /artworks/:slug ile getiriyor (id değil slug).

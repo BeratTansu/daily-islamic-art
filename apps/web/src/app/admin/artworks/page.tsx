@@ -4,6 +4,12 @@ import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { ArtworkService, type Artwork, type ArtworkType, type ListMeta } from '@/lib/artworks/artworkService';
 import { ApiError } from '@/lib/auth/apiClient';
+import {
+    getPublishStatus,
+    PUBLISH_STATUS_LABELS,
+    PUBLISH_STATUS_CLASSES,
+    formatPublishDate,
+} from '@/lib/artworks/publishStatus';
 
 // Görüntüleme label'ı — enum'un kendisiyle oynamıyoruz, sadece tabloda okunabilirlik.
 const ARTWORK_TYPE_LABELS: Record<ArtworkType, string> = {
@@ -29,6 +35,21 @@ export default function ArtworksListPage() {
     const [publishFilter, setPublishFilter] = useState<PublishFilter>('draft');
     const [hasImageOnly, setHasImageOnly] = useState(true);
 
+    // Arama: input'un anlik degeri (search) + debounce'lu sorgu degeri (debouncedSearch).
+    // Ikisi ayri cunku input her tusta guncellenmeli ama istek atilmamali.
+    const [search, setSearch] = useState('');
+    const [debouncedSearch, setDebouncedSearch] = useState('');
+
+    // 400ms yazma durunca sorgu degerini guncelle.
+    // Sayfa 1'e donus SART: sayfa 5'teyken arama yapinca sonuc 2 sayfaysa bos ekran gelirdi.
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setDebouncedSearch(search);
+            setPage(1);
+        }, 400);
+        return () => clearTimeout(timer);
+    }, [search]);
+
     // Güncellenen Fetch Fonksiyonu (useCallback ile)
     const fetchArtworks = useCallback(async () => {
         setLoading(true);
@@ -39,6 +60,7 @@ export default function ArtworksListPage() {
                 limit: 20,
                 isPublished: publishFilter === 'all' ? undefined : publishFilter === 'published',
                 hasImage: hasImageOnly ? true : undefined,
+                q: debouncedSearch.trim() || undefined,
             });
             setArtworks(res.items);
             setMeta(res.meta);
@@ -47,11 +69,34 @@ export default function ArtworksListPage() {
         } finally {
             setLoading(false);
         }
-    }, [page, publishFilter, hasImageOnly]);
+    }, [page, publishFilter, hasImageOnly, debouncedSearch]);
 
+    // active guard: hizli yazarken eski istek gec donup yeni sonucu EZMESIN.
     useEffect(() => {
-        fetchArtworks();
-    }, [fetchArtworks]);
+        let active = true;
+        (async () => {
+            setLoading(true);
+            setError(null);
+            try {
+                const res = await ArtworkService.listAdmin({
+                    page,
+                    limit: 20,
+                    isPublished: publishFilter === 'all' ? undefined : publishFilter === 'published',
+                    hasImage: hasImageOnly ? true : undefined,
+                    q: debouncedSearch.trim() || undefined,
+                });
+                if (!active) return;
+                setArtworks(res.items);
+                setMeta(res.meta);
+            } catch (e) {
+                if (!active) return;
+                setError(e instanceof ApiError ? e.message : 'Eserler yüklenemedi.');
+            } finally {
+                if (active) setLoading(false);
+            }
+        })();
+        return () => { active = false; };
+    }, [page, publishFilter, hasImageOnly, debouncedSearch]);
 
     async function handleDelete(id: string, title: string | null) {
         const label = title ?? '(başlıksız eser)';
@@ -124,6 +169,14 @@ export default function ArtworksListPage() {
                     Sadece görselli
                 </label>
 
+                <input
+                    type="text"
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    placeholder="Başlık veya sanatçı ara…"
+                    className="rounded border border-neutral-300 px-3 py-1 text-sm w-64"
+                />
+
                 <span className="text-sm text-gray-500 ml-auto">{meta?.total ?? 0} eser</span>
             </div>
 
@@ -152,8 +205,9 @@ export default function ArtworksListPage() {
                                 <th className="px-4 py-3 font-medium">Sanatçı</th>
                                 <th className="px-4 py-3 font-medium">Tür</th>
                                 <th className="px-4 py-3 font-medium">Durum</th>
+                                <th className="px-4 py-3 font-medium">Yayın Tarihi</th>
                                 <th className="px-4 py-3 font-medium text-center">Yayın</th>
-                                <th className="px-4 py-3 font-medium text-center">Günün Eseri</th>
+                                <th className="px-3 py-2 font-medium text-center whitespace-nowrap">Günün Eseri</th>
                                 <th className="px-4 py-3 font-medium text-right">İşlem</th>
                             </tr>
                         </thead>
@@ -161,28 +215,39 @@ export default function ArtworksListPage() {
                             {artworks.map((a) => (
                                 <tr key={a.id} className="border-t border-neutral-100 align-middle">
                                     {/* Görsel Sütunu */}
-                                    <td className="px-4 py-2">
+                                    <td className="px-3 py-1.5">
                                         {a.imageUrl ? (
-                                            <img src={a.imageUrl} alt="" className="w-16 h-16 object-cover rounded" loading="lazy" />
+                                            // thumbUrl varsa onu kullan — panel listesi 2606 satir,
+                                            // tam boy gorsel cekmek gereksiz (thumbnail sistemi zaten kuruldu).
+                                            <img
+                                                src={a.thumbUrl ?? a.imageUrl}
+                                                alt=""
+                                                className="w-10 h-10 object-cover rounded"
+                                                loading="lazy"
+                                            />
                                         ) : (
-                                            <div className="w-16 h-16 bg-gray-100 rounded" />
+                                            <div className="w-10 h-10 bg-neutral-100 rounded" />
                                         )}
                                     </td>
-                                    <td className="px-4 py-3">
+                                    <td className="px-3 py-2">
                                         <span className="font-medium">{a.title ?? '(başlıksız)'}</span>
                                     </td>
-                                    <td className="px-4 py-3 text-neutral-600">{a.artist?.name ?? '—'}</td>
-                                    <td className="px-4 py-3 text-neutral-600">{ARTWORK_TYPE_LABELS[a.type]}</td>
+                                    <td className="px-3 py-2 text-neutral-600">{a.artist?.name ?? '—'}</td>
+                                    <td className="px-3 py-2 text-neutral-600">{ARTWORK_TYPE_LABELS[a.type]}</td>
                                     <td className="px-4 py-3">
-                                        {a.isPublished ? (
-                                            <span className="rounded bg-emerald-100 px-1.5 py-0.5 text-xs text-emerald-700">
-                                                Yayında
-                                            </span>
-                                        ) : (
-                                            <span className="rounded bg-neutral-100 px-1.5 py-0.5 text-xs text-neutral-500">
-                                                Taslak
-                                            </span>
-                                        )}
+                                        {(() => {
+                                            const status = getPublishStatus(a);
+                                            return (
+                                                <span
+                                                    className={`rounded px-1.5 py-0.5 text-xs ${PUBLISH_STATUS_CLASSES[status]}`}
+                                                >
+                                                    {PUBLISH_STATUS_LABELS[status]}
+                                                </span>
+                                            );
+                                        })()}
+                                    </td>
+                                    <td className="px-3 py-2 text-neutral-600 whitespace-nowrap">
+                                        {formatPublishDate(a.publishAt)}
                                     </td>
                                     {/* Yayın Sütunu */}
                                     <td className="px-4 py-3 text-center">
@@ -226,6 +291,31 @@ export default function ArtworksListPage() {
                             ))}
                         </tbody>
                     </table>
+                </div>
+            )}
+
+            {/* Sayfalama — meta'dan turer, uydurma sayfa sayisi yok. */}
+            {!loading && !error && meta && meta.pages > 1 && (
+                <div className="mt-4 flex items-center justify-center gap-3 text-sm">
+                    <button
+                        onClick={() => setPage((p) => Math.max(1, p - 1))}
+                        disabled={page <= 1}
+                        className="rounded border border-neutral-300 px-3 py-1 disabled:opacity-40 hover:bg-neutral-50"
+                    >
+                        ← Önceki
+                    </button>
+
+                    <span className="text-neutral-600">
+                        Sayfa {meta.page} / {meta.pages}
+                    </span>
+
+                    <button
+                        onClick={() => setPage((p) => Math.min(meta.pages, p + 1))}
+                        disabled={page >= meta.pages}
+                        className="rounded border border-neutral-300 px-3 py-1 disabled:opacity-40 hover:bg-neutral-50"
+                    >
+                        Sonraki →
+                    </button>
                 </div>
             )}
         </div>

@@ -12,12 +12,10 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
+/* Dark mode DEVRE DISI: admin paneli tek temali (Tailwind renk siniflari
+   acik zemine gore secildi). prefers-color-scheme acikken --foreground
+   #ededed oluyordu -> beyaz uzerine beyaz. Panel dark-mode destegi
+   ayri bir is; simdilik tema tek. */
 
 body {
   background: var(--background);

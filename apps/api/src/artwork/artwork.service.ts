@@ -253,6 +253,8 @@ export class ArtworkService {
                     { title: { contains: q, mode: 'insensitive' } },
                     { arabicText: { contains: q, mode: 'insensitive' } },
                     { translation: { contains: q, mode: 'insensitive' } },
+                    // Sanatci adi: veride cogu title null, pratikte en cok aranan alan bu.
+                    { artist: { name: { contains: q, mode: 'insensitive' } } },
                 ],
             }),
         };
@@ -269,6 +271,50 @@ export class ArtworkService {
         ]);
 
         return { items, meta: { page, limit, total, pages: Math.ceil(total / limit) } };
+    }
+
+    /**
+     * Admin dashboard sayimlari.
+     *
+     * Neden tek endpoint: frontend'den 5 ayri istek atip meta.total okumak
+     * hem yavas hem cirkin. $transaction ile hepsi tek gidis-donuste.
+     *
+     * Neden publicVisibilityWhere KULLANILMIYOR: o getter public yollar icin
+     * (feed/daily/detay/liked). Burada uc durumu AYIRMAK gerekiyor —
+     * yayinda / kuyrukta / taslak. Getter sadece "yayinda"yi verir.
+     * Tek `now` degiskeni: bes sorgu ayni ani gorsun (saniye kaymasi olmasin).
+     */
+    async getAdminStats() {
+        const now = new Date();
+
+        const [total, published, queued, draft, artists, lastQueued] =
+            await this.prisma.$transaction([
+                this.prisma.artwork.count(),
+                this.prisma.artwork.count({
+                    where: { isPublished: true, publishAt: { lte: now } },
+                }),
+                this.prisma.artwork.count({
+                    where: { isPublished: true, publishAt: { gt: now } },
+                }),
+                this.prisma.artwork.count({ where: { isPublished: false } }),
+                this.prisma.artist.count(),
+                this.prisma.artwork.findFirst({
+                    where: { isPublished: true, publishAt: { gt: now } },
+                    orderBy: { publishAt: 'desc' },
+                    select: { publishAt: true },
+                }),
+            ]);
+
+        return {
+            total,
+            published,
+            queued,
+            draft,
+            artists,
+            // Kuyrugun BITIS tarihi: "bu tarihe kadar otomatik akis var".
+            // null = kuyrukta eser yok (yeni eser eklenmeli).
+            queueEndsAt: lastQueued?.publishAt ?? null,
+        };
     }
 
     // --- GÜN 5: Günün Eseri Mantığı ---

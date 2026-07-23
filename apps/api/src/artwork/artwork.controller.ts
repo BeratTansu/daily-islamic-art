@@ -55,6 +55,14 @@ export class ArtworkController {
         return this.artworkService.findDaily(req.user?.id, refresh === 'true');
     }
 
+    // ⚠️ STATIK ROTA: admin/:slug'dan ONCE. Yoksa "stats" slug sanilir.
+    @Get('admin/stats')
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Roles(Role.ADMIN)
+    getAdminStats() {
+        return this.artworkService.getAdminStats();
+    }
+
     @Get('admin')
     @UseGuards(JwtAuthGuard, RolesGuard)
     @Roles(Role.ADMIN)
