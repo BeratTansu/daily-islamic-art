@@ -69,12 +69,15 @@ export function ArtworkForm({ mode, artworkId, initial, initialImageUrl }: Artwo
     }
 
     // Boş opsiyonelleri undefined'a çevir. imageUrl'i ayrı ekliyoruz (upload sonrası).
-    function toPayload(imageUrl?: string): CreateArtworkInput {
+    function toPayload(imageUrl?: string, thumbUrl?: string): CreateArtworkInput {
         return {
             artistId: form.artistId,
             type: form.type,
             // create'te imageUrl her zaman dolu gelir; edit'te undefined olabilir (dokunma).
             imageUrl: imageUrl as string,
+            // thumbUrl upload'tan gelir; uretim basarisizsa undefined kalir
+            // (feed'de thumbUrl ?? imageUrl fallback devreye girer).
+            thumbUrl,
             title: form.title.trim() || undefined,
             script: form.script.trim() || undefined,
             period: form.period.trim() || undefined,
@@ -102,20 +105,28 @@ export function ArtworkForm({ mode, artworkId, initial, initialImageUrl }: Artwo
 
         try {
             // 1. ADIM: dosya seçilmişse upload et (create'te zorunlu, edit'te opsiyonel)
+            // Upload artik imageUrl + thumbUrl birlikte doner (thumb senkron uretilir).
             let imageUrl: string | undefined;
+            let thumbUrl: string | undefined;
             if (file) {
                 const res = await ArtworkService.upload(file);
                 imageUrl = res.imageUrl;
+                thumbUrl = res.thumbUrl ?? undefined;
             }
 
             // 2. ADIM: create veya update
             if (mode === 'create') {
                 // imageUrl kesin dolu (yukarıda file zorunluydu)
-                await ArtworkService.create(toPayload(imageUrl));
+                await ArtworkService.create(toPayload(imageUrl, thumbUrl));
             } else {
-                // edit: imageUrl varsa güncelle, yoksa payload'dan çıkar (mevcut korunur)
-                const payload = toPayload(imageUrl);
-                if (!imageUrl) delete (payload as Partial<CreateArtworkInput>).imageUrl;
+                // edit: imageUrl varsa güncelle, yoksa payload'dan çıkar (mevcut korunur).
+                // thumbUrl de ayni kaderi paylasir — yeni gorsel yoksa eskisine DOKUNMA
+                // (yoksa yeni imageUrl + eski thumbUrl eslesmezdi).
+                const payload = toPayload(imageUrl, thumbUrl);
+                if (!imageUrl) {
+                    delete (payload as Partial<CreateArtworkInput>).imageUrl;
+                    delete (payload as Partial<CreateArtworkInput>).thumbUrl;
+                }
                 await ArtworkService.update(artworkId!, payload);
             }
 

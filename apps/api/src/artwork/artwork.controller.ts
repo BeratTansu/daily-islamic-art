@@ -8,6 +8,11 @@ import { FeatureArtworkDto } from './dto/feature-artwork.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ArtworkService } from './artwork.service';
 import { StorageService } from '../storage/storage.service';
+import {
+    ImageProcessingService,
+    THUMB_MIME,
+    THUMB_EXT,
+} from '../storage/image-processing.service';
 import { CreateArtworkDto } from './dto/create-artwork.dto';
 import { UpdateArtworkDto } from './dto/update-artwork.dto';
 import { QueryArtworkDto } from './dto/query-artwork.dto';
@@ -26,6 +31,7 @@ export class ArtworkController {
     constructor(
         private readonly artworkService: ArtworkService,
         private readonly storage: StorageService,
+        private readonly imaging: ImageProcessingService,
     ) { }
 
     // ── Public okuma ──
@@ -124,13 +130,35 @@ export class ArtworkController {
             }),
         )
         file: Express.Multer.File,
-    ): Promise<{ imageUrl: string }> {
+    ): Promise<{ imageUrl: string; thumbUrl: string | null }> {
+        // Orijinal: UUID'yi StorageService uretir, donen URL'den geri cikarilir.
         const imageUrl = await this.storage.upload(
             file.buffer,
             file.mimetype,
             'artworks',
         );
-        return { imageUrl };
+
+        // Thumbnail: ayni UUID'yi paylasir (artworks/thumbs/<uuid>.webp).
+        // SENKRON — thumb'siz eser olusmasin (invariant akisin icinde).
+        // Uretim patlarsa (bozuk/asiri buyuk gorsel) upload'i BATIRMA:
+        // thumbUrl null doner, feed'de thumbUrl ?? imageUrl fallback devreye girer.
+        let thumbUrl: string | null = null;
+        try {
+            const baseName = extractBaseName(imageUrl);
+            if (baseName) {
+                const thumb = await this.imaging.createThumbnail(file.buffer);
+                thumbUrl = await this.storage.upload(
+                    thumb,
+                    THUMB_MIME,
+                    'artworks',
+                    `artworks/thumbs/${baseName}${THUMB_EXT}`,
+                );
+            }
+        } catch {
+            thumbUrl = null;
+        }
+
+        return { imageUrl, thumbUrl };
     }
 
     @Patch(':id')
@@ -164,4 +192,15 @@ export class ArtworkController {
     remove(@Param('id') id: string) {
         return this.artworkService.remove(id);
     }
+}
+
+/**
+ * "https://cdn.../artworks/abc-123.jpg" -> "abc-123"
+ * Thumb key'i orijinalle ayni UUID'yi paylasir (eslesme takip edilebilir).
+ */
+function extractBaseName(imageUrl: string): string | null {
+    const fileName = imageUrl.split('/').pop();
+    if (!fileName) return null;
+    const dot = fileName.lastIndexOf('.');
+    return dot === -1 ? fileName : fileName.slice(0, dot);
 }

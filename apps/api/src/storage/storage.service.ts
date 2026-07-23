@@ -53,9 +53,10 @@ export class StorageService {
         buffer: Buffer,
         mimeType: string,
         folder = 'artworks',
+        explicitKey?: string,
     ): Promise<string> {
         const ext = this.extFromMime(mimeType);
-        const key = `${folder}/${randomUUID()}${ext}`;
+        const key = explicitKey ?? `${folder}/${randomUUID()}${ext}`;
 
         await this.client.send(
             new PutObjectCommand({
@@ -66,7 +67,7 @@ export class StorageService {
             }),
         );
 
-        // public URL: R2.dev subdomain + key
+        // public URL: R2 custom domain + key
         return `${this.publicUrl}/${key}`;
     }
 

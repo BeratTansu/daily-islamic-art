@@ -89,9 +89,12 @@ export interface AdminListParams {
   q?: string;
 }
 
-// upload dönüşü (POST /artworks/upload → { imageUrl })
+// upload dönüşü (POST /artworks/upload → { imageUrl, thumbUrl })
+// thumbUrl null olabilir: thumb üretimi patlarsa (bozuk/aşırı büyük görsel)
+// upload batmaz, null döner — feed'de thumbUrl ?? imageUrl fallback devreye girer.
 export interface UploadResult {
   imageUrl: string;
+  thumbUrl: string | null;
 }
 
 // ── Servis: sadece HTTP + tipli response. UI/state yok. ──
