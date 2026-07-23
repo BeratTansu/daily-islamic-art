@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
     View,
     Text,
@@ -33,6 +33,10 @@ import { DiscoverPage } from '../../../components/DiscoverPage';
 import { colors, spacing, fontSize, fontWeight, fontFamily } from '../../../constants/theme';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
+import { TourTarget } from '../../../components/TourTarget';
+import { TourOverlay } from '../../../components/TourOverlay';
+import { useTour } from '../../../context/TourContext';
+import { OnboardingStorage } from '../../../lib/onboarding/onboardingStorage';
 
 const HEADER_MIN = 88;
 
@@ -67,6 +71,28 @@ export default function FeedScreen() {
 
     const onDailyRefresh = useCallback(() => loadDaily(true), [loadDaily]);
 
+    // Tur: onboarding tamamlanmamissa ve gunun eseri YUKLENDIYSE baslat.
+    // daily beklemek sart — kart cizilmeden olcum yapilamaz (koordinat 0 doner).
+    const { startTour } = useTour();
+    // useRef, useState DEGIL: state olsaydi setTourChecked effect'i yeniden
+    // tetikler, cleanup active=false yapar ve 300ms'lik setTimeout icindeki
+    // startTour hic calismazdi. Ref degisimi re-render tetiklemez.
+    const tourChecked = useRef(false);
+
+    useEffect(() => {
+        if (tourChecked.current || dailyLoading || !daily) return;
+        tourChecked.current = true;
+
+        let active = true;
+        (async () => {
+            const done = await OnboardingStorage.isCompleted();
+            if (!active || done) return;
+            // Kisa gecikme: TourTarget'lar measureInWindow'u tamamlasin.
+            setTimeout(() => { if (active) startTour(); }, 400);
+        })();
+        return () => { active = false; };
+    }, [dailyLoading, daily, startTour]);
+
     const goToDetail = useCallback((slug: string) => {
         router.push({ pathname: '/artwork/[slug]', params: { slug } });
     }, []);
@@ -96,7 +122,11 @@ export default function FeedScreen() {
         <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['top']}>
             <Tabs.Container
                 renderHeader={renderHeader}
-                renderTabBar={(props) => <SortTabBar {...props} />}
+                renderTabBar={(props) => (
+                    <TourTarget tourKey="sortTabs">
+                        <SortTabBar {...props} />
+                    </TourTarget>
+                )}
                 initialTabName="discover"
                 lazy
                 minHeaderHeight={HEADER_MIN}
@@ -115,6 +145,9 @@ export default function FeedScreen() {
                     <FeedPage sort="oldest" onDailyRefresh={onDailyRefresh} />
                 </Tabs.Tab>
             </Tabs.Container>
+
+            {/* Tur overlay'i Tabs'in USTUNDE — tum ekrani kaplar, dokunmalari yakalar. */}
+            <TourOverlay />
         </SafeAreaView>
     );
 }
@@ -148,20 +181,34 @@ function LikeMeta({
     backendIsLiked,
     displayIsLiked,
     onToggleLike,
+    isTourTarget = false,
 }: {
     id: string;
     baseCount: number;
     backendIsLiked: boolean;
     displayIsLiked: boolean;
     onToggleLike: (id: string, isLiked: boolean) => void;
+    /** Sadece buyuk DailyCard'daki kalp tur hedefi olur.
+     *  CompactDailyCard gorunmezken de olculur → yanlis koordinat. */
+    isTourTarget?: boolean;
 }) {
     const count = displayLikeCount(baseCount, backendIsLiked, displayIsLiked);
-    return (
-        <View style={styles.likeMeta}>
+    const content = (
+        <>
             <LikeButton isLiked={displayIsLiked} onPress={() => onToggleLike(id, displayIsLiked)} />
             {count > 0 && <Text style={styles.likeCount}>{count}</Text>}
-        </View>
+        </>
     );
+
+    if (isTourTarget) {
+        return (
+            <TourTarget tourKey="likeButton" style={styles.likeMeta}>
+                {content}
+            </TourTarget>
+        );
+    }
+
+    return <View style={styles.likeMeta}>{content}</View>;
 }
 
 function DailyHeader({
@@ -307,7 +354,7 @@ function DailyCard({
 
     return (
         <View style={styles.dailyWrap}>
-            <View style={styles.dailyCard}>
+            <TourTarget tourKey="dailyCard" style={styles.dailyCard}>
                 <GestureDetector gesture={gesture}>
                     <Image
                         source={{ uri: daily.thumbUrl ?? daily.imageUrl }}
@@ -328,9 +375,10 @@ function DailyCard({
                         backendIsLiked={daily.isLiked}
                         displayIsLiked={isLiked}
                         onToggleLike={onToggleLike}
+                        isTourTarget
                     />
                 </View>
-            </View>
+            </TourTarget>
         </View>
     );
 }

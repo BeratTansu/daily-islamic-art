@@ -114,6 +114,20 @@
         "removeFromCollectionMessage": "Remove from {{name}}?",
         "removeError": "Couldn't remove, try again."
     },
+    "tour": {
+        "step1Title": "Artwork of the day",
+        "step1Body": "A new artwork greets you here every day. The collection keeps growing.",
+        "step2Title": "Like and collect",
+        "step2Body": "Tap the heart or double-tap the artwork. Your likes gather in your collection.",
+        "step3Title": "Different feeds",
+        "step3Body": "Discover shuffles on every visit, Most Liked shows favourites, Newest and Oldest sort by date.",
+        "step4Title": "Your collections",
+        "step4Body": "Everything you liked and saved lives here. You can create your own collections.",
+        "skip": "Skip",
+        "back": "Back",
+        "next": "Next",
+        "done": "Start"
+    },
     "toast": {
         "downloadSuccess": "Image saved to gallery",
         "permissionRequired": "Gallery permission required to save",

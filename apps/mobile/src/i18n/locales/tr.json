@@ -114,6 +114,20 @@
         "removeFromCollectionMessage": "{{name}} koleksiyonundan çıkarılsın mı?",
         "removeError": "Çıkarılamadı, tekrar dene."
     },
+    "tour": {
+        "step1Title": "Günün eseri",
+        "step1Body": "Her gün yeni bir eser seni burada karşılar. Koleksiyon her gün büyüyor.",
+        "step2Title": "Beğen, biriktir",
+        "step2Body": "Kalbe dokun ya da esere çift dokun. Beğendiklerin koleksiyonunda toplanır.",
+        "step3Title": "Farklı akışlar",
+        "step3Body": "Keşfet'te her giriş farklı eserler, En Beğenilen'de öne çıkanlar, En Yeni ve En Eski'de tarih sırası.",
+        "step4Title": "Koleksiyonların",
+        "step4Body": "Beğendiğin ve kaydettiğin eserler burada. Kendi koleksiyonlarını oluşturabilirsin.",
+        "skip": "Atla",
+        "back": "Geri",
+        "next": "İleri",
+        "done": "Başla"
+    },
     "toast": {
         "downloadSuccess": "Görsel galeriye kaydedildi",
         "permissionRequired": "Kaydetmek için galeri izni gerekli",

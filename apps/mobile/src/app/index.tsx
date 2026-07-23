@@ -32,10 +32,8 @@ export default function Index() {
 
   // Sira onemli: onboarding gorulmediyse auth'tan ONCE gelir.
   // Gerekce: kullanici urunun ne oldugunu anlamadan giris istemek sogutur.
-  if (!onboardingDone) {
-    return <Redirect href="/onboarding" />;
-  }
-
+  // Onboarding artik feed'de spotlight tur olarak calisiyor (bkz. TourOverlay).
+  // Buradaki yonlendirme KALDIRILDI — flag'i tur kendisi yaziyor.
   return <Redirect href={status === 'authenticated' ? '/feed' : '/welcome'} />;
 }
 
