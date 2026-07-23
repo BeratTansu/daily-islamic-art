@@ -17,6 +17,17 @@
         "error": "Error",
         "success": "Success"
     },
+    "onboarding": {
+        "slide1Title": "A new artwork every day",
+        "slide1Body": "Selected works of Islamic art are added to the collection daily. Calligraphy, illumination, miniature, marbling and tilework.",
+        "slide2Title": "Like and collect",
+        "slide2Body": "Like the works you love, build your own collections and come back anytime.",
+        "slide3Title": "Make it your wallpaper",
+        "slide3Body": "Download the artwork you like and carry it on your screen.",
+        "skip": "Skip",
+        "next": "Next",
+        "start": "Start"
+    },
     "feed": {
         "discover": "Discover",
         "mostLiked": "Most Liked",

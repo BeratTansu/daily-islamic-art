@@ -17,6 +17,17 @@
         "error": "Hata",
         "success": "Başarılı"
     },
+    "onboarding": {
+        "slide1Title": "Her gün yeni bir eser",
+        "slide1Body": "İslam sanatının seçkin örnekleri her gün koleksiyona ekleniyor. Hat, tezhip, minyatür, ebru ve çini.",
+        "slide2Title": "Beğen, biriktir",
+        "slide2Body": "Sevdiğin eserleri beğen, kendi koleksiyonlarını oluştur ve istediğin zaman geri dön.",
+        "slide3Title": "Duvar kağıdın olsun",
+        "slide3Body": "Beğendiğin eseri telefonuna indir, ekranında taşı.",
+        "skip": "Atla",
+        "next": "İleri",
+        "start": "Başla"
+    },
     "feed": {
         "discover": "Keşfet",
         "mostLiked": "En Beğenilen",
