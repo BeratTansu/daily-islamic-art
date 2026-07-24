@@ -1,12 +1,12 @@
 import type { ExpoConfig } from 'expo/config';
 
 const config: ExpoConfig = {
-  name: 'mobile',
+  name: 'Daily Islamic Art',
   slug: 'mobile',
   version: '1.0.0',
   orientation: 'portrait',
   icon: './assets/images/icon.png',
-  scheme: 'mobile',
+  scheme: 'dia',
   userInterfaceStyle: 'automatic',
   android: {
     package: 'app.dia.mobile',
@@ -35,6 +35,24 @@ const config: ExpoConfig = {
     'expo-secure-store',
     'expo-localization',
     'expo-sharing',
+    [
+      'react-native-android-widget',
+      {
+        widgets: [
+          {
+            name: 'DailyArtwork',
+            label: 'Günün Eseri',
+            minWidth: '320dp',
+            minHeight: '120dp',
+            targetCellWidth: 4,
+            targetCellHeight: 2,
+            description: 'Her gün yeni bir Islamic art eseri',
+            updatePeriodMillis: 1800000,
+            resizeMode: 'horizontal|vertical',
+          },
+        ],
+      },
+    ],
   ],
   experiments: {
     typedRoutes: true,

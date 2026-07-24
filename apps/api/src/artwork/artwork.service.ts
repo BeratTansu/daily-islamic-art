@@ -358,28 +358,24 @@ export class ArtworkService {
             const { _count, ...rest } = manualFeatured;
             artwork = { ...rest, likeCount: _count.likes };
         } else {
-            // 2) Fallback: tarihe göre deterministik seçim
-            const total = await this.prisma.artwork.count({
+            // 2) Fallback: takvimin bugun yayina soktugu eser.
+            // publishAt <= now olanlar arasinda en son yayinlanan = gunun eseri.
+            // Kuyruk sistemi (enqueue-publish) gunde bir eser yayinladigi icin
+            // bu her gun dogal olarak degisir. createdAt/dayOfYear ekseni birakildi:
+            // (a) import sirasini yansitiyordu, "gunun eseri" vaadiyle ilgisizdi,
+            // (b) total her gun degistigi icin eslesme kayiyordu (ardisiklik garantisi yok),
+            // (c) yil donumunde bozuluyordu (365 % total).
+            // Feed "En Yeni" sekmesiyle ayni eksen → tutarlilik.
+            const daily = await this.prisma.artwork.findFirst({
                 where: this.publicVisibilityWhere,
-            });
-
-            if (total === 0) throw new NotFoundException('Yayında eser yok');
-
-            const dayOfYear = this.getDayOfYear(new Date());
-            const index = dayOfYear % total;
-
-            const [daily] = await this.prisma.artwork.findMany({
-                where: this.publicVisibilityWhere,
-                orderBy: { createdAt: 'asc' },
-                skip: index,
-                take: 1,
+                orderBy: [{ publishAt: 'desc' }, { id: 'desc' }],
                 include: { artist: true, _count: { select: { likes: true } } },
             });
 
-            if (daily) {
-                const { _count, ...rest } = daily;
-                artwork = { ...rest, likeCount: _count.likes };
-            }
+            if (!daily) throw new NotFoundException('Yayında eser yok');
+
+            const { _count, ...rest } = daily;
+            artwork = { ...rest, likeCount: _count.likes };
         }
 
         // 3. Sonucu cache'e yaz
