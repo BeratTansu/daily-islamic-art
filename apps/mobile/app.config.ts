@@ -36,6 +36,14 @@ const config: ExpoConfig = {
     'expo-localization',
     'expo-sharing',
     [
+      'expo-build-properties',
+      {
+        android: {
+          usesCleartextTraffic: true,
+        },
+      },
+    ],
+    [
       'react-native-android-widget',
       {
         widgets: [
