@@ -23,7 +23,7 @@ export default function TabsLayout() {
             <Tabs.Screen
                 name="feed"
                 options={{
-                    title: 'Akış',
+                    title: t('tabs.feed'),
                     tabBarIcon: ({ color, size, focused }) => (
                         <Ionicons
                             name={focused ? 'home' : 'home-outline'}
@@ -36,7 +36,7 @@ export default function TabsLayout() {
             <Tabs.Screen
                 name="collections"
                 options={{
-                    title: 'Koleksiyonlar',
+                    title: t('tabs.collections'),
                     tabBarIcon: ({ color, size, focused }) => (
                         <Ionicons
                             name={focused ? 'bookmark' : 'bookmark-outline'}
@@ -49,7 +49,7 @@ export default function TabsLayout() {
             <Tabs.Screen
                 name="profile"
                 options={{
-                    title: 'Profil',
+                    title: t('tabs.profile'),
                     tabBarIcon: ({ color, size, focused }) => (
                         <Ionicons
                             name={focused ? 'person' : 'person-outline'}

@@ -6,6 +6,7 @@
 //   hedef verilmezse 200.
 // (runner: tsx — düz Prisma, DI yok)
 import { PrismaClient } from '../generated/client/index.js';
+import { EXCLUDED_SOURCE_IDS } from './_excluded-artworks.js';
 
 const prisma = new PrismaClient();
 
@@ -27,8 +28,9 @@ async function main() {
     }
 
     const all = await prisma.artwork.findMany({
+        where: { sourceId: { notIn: [...EXCLUDED_SOURCE_IDS] } },
         select: {
-            id: true, isPublished: true,
+            id: true, isPublished: true, sourceId: true,
             description: true, translation: true, transcription: true,
         },
     });
@@ -57,6 +59,7 @@ async function main() {
     const kalan = [...secilenSet].filter((id) => suAnYayinda.has(id)).length;
 
     console.log(`\n═══ PLAN (hedef ${hedef}) — HİÇBİR ŞEY YAZILMADI ═══`);
+    console.log(`(Bozuk gorsel nedeniyle haric tutulan: ${EXCLUDED_SOURCE_IDS.length} eser)`);
     console.log(`Seçilecek toplam: ${secilen.length}`);
     console.log(`  ├─ Katman 1 (translation):  ${secT1}`);
     console.log(`  ├─ Katman 2 (transcription): ${secT2}`);

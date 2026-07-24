@@ -1,4 +1,9 @@
 {
+    "tabs": {
+        "feed": "Akış",
+        "collections": "Koleksiyonlar",
+        "profile": "Profil"
+    },
     "nav": {
         "feed": "Akış",
         "collections": "Koleksiyonlar",
@@ -112,7 +117,12 @@
         "actionDownload": "İndir",
         "removeFromCollectionTitle": "Koleksiyondan çıkar",
         "removeFromCollectionMessage": "{{name}} koleksiyonundan çıkarılsın mı?",
-        "removeError": "Çıkarılamadı, tekrar dene."
+        "removeError": "Çıkarılamadı, tekrar dene.",
+        "actionShare": "Paylaş",
+        "shareUnavailable": "Bu cihazda paylaşım kullanılamıyor.",
+        "shareError": "Paylaşılamadı.",
+        "actionWallpaper": "Duvar kağıdı yap",
+        "wallpaperError": "Duvar kağıdı yapılamadı."
     },
     "tour": {
         "step1Title": "Günün eseri",

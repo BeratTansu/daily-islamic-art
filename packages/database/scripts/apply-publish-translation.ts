@@ -14,6 +14,7 @@
 // (runner: tsx — düz Prisma, DI yok)
 import { PrismaClient } from '../generated/client/index.js';
 import { writeFileSync } from 'node:fs';
+import { EXCLUDED_SOURCE_IDS } from './_excluded-artworks.js';
 
 const prisma = new PrismaClient();
 
@@ -36,9 +37,12 @@ async function main() {
         throw new Error(`Geçersiz hedef: ${process.argv[2]}`);
     }
 
+    // ⚠️ plan-publish-translation.ts ile BIREBIR AYNI olmali (exclude dahil),
+    // yoksa plan bir sey der apply baska sey yapar.
     const all = await prisma.artwork.findMany({
+        where: { sourceId: { notIn: [...EXCLUDED_SOURCE_IDS] } },
         select: {
-            id: true, isPublished: true,
+            id: true, isPublished: true, sourceId: true,
             description: true, translation: true, transcription: true,
         },
     });

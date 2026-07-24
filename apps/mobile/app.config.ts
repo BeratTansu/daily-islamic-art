@@ -34,6 +34,7 @@ const config: ExpoConfig = {
     ],
     'expo-secure-store',
     'expo-localization',
+    'expo-sharing',
   ],
   experiments: {
     typedRoutes: true,

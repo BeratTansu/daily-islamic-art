@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { View, Text, Pressable, StyleSheet, useWindowDimensions, Modal } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Svg, { Path } from 'react-native-svg';
 import { useTranslation } from 'react-i18next';
 import { useTour, type TourTargetKey } from '../context/TourContext';
 import { OnboardingStorage } from '../lib/onboarding/onboardingStorage';
@@ -8,6 +9,11 @@ import { colors, spacing, fontSize, fontFamily } from '../constants/theme';
 
 // Delik cevresindeki bosluk — hedef nefes alsin.
 const PADDING = 8;
+// Delik ekran kenarina ASLA degmesin (full-width hedeflerde bile nefes payi).
+const EDGE_MARGIN = 12;
+// Delik kose yaricapi.
+const HOLE_RADIUS = 12;
+
 const OVERLAY_COLOR = 'rgba(0,0,0,0.72)';
 // Alt tab bar yuksekligi (expo-router varsayilani). Cihazda oturmaziyorsa ayarla.
 const TAB_BAR_H = 56;
@@ -23,6 +29,40 @@ const STEPS: TourStep[] = [
     { key: 'step3', target: 'sortTabs' },
     { key: 'step4', target: 'collectionsTab' },
 ];
+
+/**
+ * Tam ekran dikdortgen + yuvarlak koseli delik = tek path.
+ * fillRule="evenodd" ile ic yol disari cikarilir (gercek maske, hile yok).
+ * Yaricap delik boyutunun yarisini asamaz (kucuk hedeflerde bozulma onlenir).
+ */
+function buildMaskPath(
+    screenW: number,
+    screenH: number,
+    hole: { x: number; y: number; w: number; h: number },
+    radius: number,
+): string {
+    const r = Math.min(radius, hole.w / 2, hole.h / 2);
+    const { x, y, w, h } = hole;
+
+    // Dis dikdortgen (saat yonunde)
+    const outer = `M0,0 H${screenW} V${screenH} H0 Z`;
+
+    // Ic yuvarlak dikdortgen (saat yonunun TERSI — evenodd icin yon onemli degil
+    // ama okunabilirlik icin tutarli yaziyoruz)
+    const inner =
+        `M${x + r},${y} ` +
+        `H${x + w - r} ` +
+        `A${r},${r} 0 0 1 ${x + w},${y + r} ` +
+        `V${y + h - r} ` +
+        `A${r},${r} 0 0 1 ${x + w - r},${y + h} ` +
+        `H${x + r} ` +
+        `A${r},${r} 0 0 1 ${x},${y + h - r} ` +
+        `V${y + r} ` +
+        `A${r},${r} 0 0 1 ${x + r},${y} ` +
+        `Z`;
+
+    return `${outer} ${inner}`;
+}
 
 export function TourOverlay() {
     const { t } = useTranslation();
@@ -56,22 +96,38 @@ export function TourOverlay() {
     const targetRect =
         step.target === 'collectionsTab'
             ? {
-                  x: screenW / 3,
-                  y: screenH - TAB_BAR_H - insets.bottom,
-                  width: screenW / 3,
-                  height: TAB_BAR_H,
-              }
+                x: screenW / 3,
+                y: screenH - TAB_BAR_H - insets.bottom,
+                width: screenW / 3,
+                // insets.bottom dahil: bar'in gorsel yuksekligi safe area'yi
+                // da kapsiyor, TAB_BAR_H tek basina alt kismi disarida birakiyordu.
+                height: TAB_BAR_H + insets.bottom,
+            }
             : measured;
 
     // Delik koordinatlari — hedef yoksa tam karartma (delik cizilmez).
-    const hole = targetRect
-        ? {
-              x: Math.max(0, targetRect.x - PADDING),
-              y: Math.max(0, targetRect.y - PADDING),
-              w: targetRect.width + PADDING * 2,
-              h: targetRect.height + PADDING * 2,
-          }
-        : null;
+    // Once PADDING ile buyut, SONRA ekran kenarlarina EDGE_MARGIN birakacak
+    // sekilde kirp. Clamp olmadan full-width hedefler (SortTabBar, tab bar)
+    // ekran kenarina yapisiyordu.
+    const hole = (() => {
+        if (!targetRect) return null;
+
+        const left = Math.max(targetRect.x - PADDING, EDGE_MARGIN);
+        const right = Math.min(
+            targetRect.x + targetRect.width + PADDING,
+            screenW - EDGE_MARGIN,
+        );
+        const top = Math.max(targetRect.y - PADDING, EDGE_MARGIN);
+        const bottom = Math.min(
+            targetRect.y + targetRect.height + PADDING,
+            screenH - EDGE_MARGIN,
+        );
+
+        // Bozuk olcum (ters dikdortgen) gelirse delik cizme — tam karartma.
+        if (right <= left || bottom <= top) return null;
+
+        return { x: left, y: top, w: right - left, h: bottom - top };
+    })();
 
     // Ipucu kutusu delige carpmasin: delik ekranin ust yarisindaysa kutu ALTTA,
     // alt yarisindaysa kutu USTTE.
@@ -84,42 +140,39 @@ export function TourOverlay() {
             <View style={StyleSheet.absoluteFill}>
                 {hole ? (
                     <>
-                        {/* Dort parca: ust / alt / sol / sag — ortada delik kalir. */}
-                        <View style={[styles.mask, { top: 0, left: 0, right: 0, height: hole.y }]} />
-                        <View
-                            style={[
-                                styles.mask,
-                                { top: hole.y + hole.h, left: 0, right: 0, bottom: 0 },
-                            ]}
-                        />
-                        <View
-                            style={[
-                                styles.mask,
-                                { top: hole.y, left: 0, width: hole.x, height: hole.h },
-                            ]}
-                        />
-                        <View
-                            style={[
-                                styles.mask,
-                                {
-                                    top: hole.y,
-                                    left: hole.x + hole.w,
-                                    width: screenW - (hole.x + hole.w),
-                                    height: hole.h,
-                                },
-                            ]}
-                        />
-                        {/* Delik kenarligi — spotlight hissi */}
+                        {/* SVG maske: dis dikdortgen + yuvarlak delik, fillRule evenodd.
+                            Border/kose-dolgusu hilelerinden vazgecildi — Android'de
+                            delik acilmiyordu. Bu matematiksel olarak dogru kesim. */}
+                        <Svg
+                            pointerEvents="none"
+                            width={screenW}
+                            height={screenH}
+                            style={StyleSheet.absoluteFill}
+                        >
+                            <Path
+                                d={buildMaskPath(screenW, screenH, hole, HOLE_RADIUS)}
+                                fill={OVERLAY_COLOR}
+                                fillRule="evenodd"
+                            />
+                        </Svg>
+
+                        {/* Delik kenarligi — spotlight hissi (altin cerceve) */}
                         <View
                             pointerEvents="none"
                             style={[
                                 styles.holeBorder,
-                                { top: hole.y, left: hole.x, width: hole.w, height: hole.h },
+                                {
+                                    top: hole.y,
+                                    left: hole.x,
+                                    width: hole.w,
+                                    height: hole.h,
+                                    borderRadius: HOLE_RADIUS,
+                                },
                             ]}
                         />
                     </>
                 ) : (
-                    <View style={[styles.mask, { top: 0, left: 0, right: 0, bottom: 0 }]} />
+                    <View style={[StyleSheet.absoluteFill, styles.fullMask]} />
                 )}
 
                 {/* Ipucu kutusu */}
@@ -165,15 +218,14 @@ export function TourOverlay() {
 }
 
 const styles = StyleSheet.create({
-    mask: {
-        position: 'absolute',
+    fullMask: {
         backgroundColor: OVERLAY_COLOR,
     },
     holeBorder: {
         position: 'absolute',
         borderWidth: 2,
         borderColor: colors.accent,
-        borderRadius: 12,
+        // borderRadius inline (HOLE_RADIUS tek kaynak).
     },
     box: {
         position: 'absolute',

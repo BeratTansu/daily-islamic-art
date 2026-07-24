@@ -1,4 +1,9 @@
 {
+    "tabs": {
+        "feed": "Feed",
+        "collections": "Collections",
+        "profile": "Profile"
+    },
     "nav": {
         "feed": "Feed",
         "collections": "Collections",
@@ -112,7 +117,12 @@
         "actionDownload": "Download",
         "removeFromCollectionTitle": "Remove from collection",
         "removeFromCollectionMessage": "Remove from {{name}}?",
-        "removeError": "Couldn't remove, try again."
+        "removeError": "Couldn't remove, try again.",
+        "actionShare": "Share",
+        "shareUnavailable": "Sharing is not available on this device.",
+        "shareError": "Could not share.",
+        "actionWallpaper": "Set as wallpaper",
+        "wallpaperError": "Could not set wallpaper."
     },
     "tour": {
         "step1Title": "Artwork of the day",

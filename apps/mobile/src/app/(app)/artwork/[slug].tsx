@@ -8,6 +8,7 @@ import {
   Pressable,
   StyleSheet,
   Alert,
+  Platform,
 } from 'react-native';
 import { useLocalSearchParams, Stack } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -23,7 +24,11 @@ import { displayLikeCount } from '../../../lib/artworks/likeCount';
 import { SaveToCollectionSheet } from '../../../components/SaveToCollectionSheet';
 import { colors, spacing, fontSize, fontWeight, fontFamily } from '../../../constants/theme';
 import { ActionSheet } from '../../../components/ActionSheet';
-import { downloadImageToGallery } from '../../../lib/media/downloadImage';
+import {
+  downloadImageToGallery,
+  shareArtworkImage,
+  setArtworkAsWallpaper,
+} from '../../../lib/media/downloadImage';
 import { useTranslation } from 'react-i18next';
 
 export default function ArtworkDetailScreen() {
@@ -37,6 +42,8 @@ export default function ArtworkDetailScreen() {
   const [memberships, setMemberships] = useState<CollectionMembership[]>([]);
   const [menuVisible, setMenuVisible] = useState(false);
   const [downloading, setDownloading] = useState(false);
+  const [sharing, setSharing] = useState(false);
+  const [settingWallpaper, setSettingWallpaper] = useState(false);
 
   const load = useCallback(async () => {
     if (!slug) return;
@@ -113,6 +120,42 @@ export default function ArtworkDetailScreen() {
       Alert.alert(t('common.error'), t('toast.permissionRequired'));
     } else {
       Alert.alert(t('common.error'), t('toast.downloadError'));
+    }
+  };
+
+  const handleShare = async () => {
+    if (!artwork) return;
+    setSharing(true);
+    const result = await shareArtworkImage(artwork.imageUrl, artwork.id);
+    setSharing(false);
+
+    // Menu her durumda kapanir: sistem sheet'i ustune aciliyor,
+    // arkada menunun acik kalmasi tuhaf olurdu.
+    setMenuVisible(false);
+
+    // BASARI ALERT'I YOK: kullanici sheet'i iptal etse de shareAsync
+    // sessizce basarili doner → "paylasildi" demek YALAN olur.
+    if (!result.ok) {
+      Alert.alert(
+        t('common.error'),
+        result.reason === 'unavailable'
+          ? t('artwork.shareUnavailable')
+          : t('artwork.shareError'),
+      );
+    }
+  };
+
+  const handleWallpaper = async () => {
+    if (!artwork) return;
+    setSettingWallpaper(true);
+    const result = await setArtworkAsWallpaper(artwork.imageUrl, artwork.id);
+    setSettingWallpaper(false);
+    setMenuVisible(false);
+
+    // Basari alert'i YOK: sistem secicisi aciliyor, kullanici ne oldugunu goruyor.
+    // Iptal ederse de "yapildi" demek yalan olurdu.
+    if (!result.ok && result.reason === 'error') {
+      Alert.alert(t('common.error'), t('artwork.wallpaperError'));
     }
   };
 
@@ -226,6 +269,24 @@ export default function ArtworkDetailScreen() {
             onPress: handleDownload,
             loading: downloading,
           },
+          {
+            icon: 'share-social-outline',
+            label: t('artwork.actionShare'),
+            onPress: handleShare,
+            loading: sharing,
+          },
+          // iOS'ta madde HIC gosterilmez — Apple policy nedeniyle karsiligi yok,
+          // gosterilse olu buton olurdu.
+          ...(Platform.OS === 'android'
+            ? [
+              {
+                icon: 'image-outline' as const,
+                label: t('artwork.actionWallpaper'),
+                onPress: handleWallpaper,
+                loading: settingWallpaper,
+              },
+            ]
+            : []),
         ]}
       />
     </>

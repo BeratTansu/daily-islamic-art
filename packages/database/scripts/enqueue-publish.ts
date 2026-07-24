@@ -12,6 +12,7 @@
 // Arguman verilmezse LIMIT = 0 (hicbir sey yapmaz, guvenli default).
 
 import { PrismaClient } from '../generated/client/index.js';
+import { EXCLUDED_SOURCE_IDS } from './_excluded-artworks.js';
 
 const prisma = new PrismaClient();
 
@@ -72,8 +73,16 @@ async function main() {
   console.log('Baslangic tabani (UTC):', base.toISOString(), '→ TR gun:', baseTr);
 
   // 4. Rezervden siradaki N eseri cek (FIFO)
+  // EXCLUDED: kaynak gorseli bozuk eserler kuyruga ALINMAZ.
+  // Kritik: kuyruga giren eser tarihi gelince KENDILIGINDEN yayinlanir,
+  // kimse bakmaz → bozuk gorsel dogrudan kullaniciya gider.
   const reserve = await prisma.artwork.findMany({
-    where: { publishAt: null, isPublished: false, translation: { not: null } },
+    where: {
+      publishAt: null,
+      isPublished: false,
+      translation: { not: null },
+      sourceId: { notIn: [...EXCLUDED_SOURCE_IDS] },
+    },
     orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
     take: limit,
     select: { id: true, slug: true },
