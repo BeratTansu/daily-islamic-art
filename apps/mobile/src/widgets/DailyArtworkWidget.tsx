@@ -1,7 +1,7 @@
 'use no memo';
 
 import React from 'react';
-import { FlexWidget, ImageWidget, TextWidget } from 'react-native-android-widget';
+import { FlexWidget, ImageWidget, OverlapWidget, TextWidget } from 'react-native-android-widget';
 
 export interface DailyArtworkWidgetProps {
     artistName: string | null;
@@ -10,8 +10,8 @@ export interface DailyArtworkWidgetProps {
 }
 
 export function DailyArtworkWidget({ thumbUrl, error }: DailyArtworkWidgetProps) {
-    // Gorsel yoksa / hata varsa: marka adiyla sade bos durum.
-    // "Yalan soylemeyen ama cirkin olmayan" — hata mesaji basmiyoruz.
+    // Bos durum: veri yoksa marka adiyla sade kutu.
+    // Hata mesaji basmiyoruz — "yalan soylemeyen ama cirkin olmayan" bos durum.
     if (error || !thumbUrl) {
         return (
             <FlexWidget
@@ -30,6 +30,8 @@ export function DailyArtworkWidget({ thumbUrl, error }: DailyArtworkWidgetProps)
         );
     }
 
+    // OverlapWidget: FlexWidget'ta overflow yok, OverlapWidget'ta var.
+    // Gorsel kutudan tasar, tasan kisim kirpilir → cerceve kalmaz, kose yuvarlakligi korunur.
     return (
         <FlexWidget
             style={{
@@ -37,8 +39,9 @@ export function DailyArtworkWidget({ thumbUrl, error }: DailyArtworkWidgetProps)
                 width: 'match_parent',
                 justifyContent: 'center',
                 alignItems: 'center',
-                backgroundColor: '#F5EDE1',
                 borderRadius: 16,
+                backgroundColor: '#F5EDE1',
+                padding: 6,
             }}
             clickAction="OPEN_APP"
         >
@@ -47,7 +50,7 @@ export function DailyArtworkWidget({ thumbUrl, error }: DailyArtworkWidgetProps)
                 imageWidth={340}
                 imageHeight={150}
                 resizeMode="contain"
-                style={{ borderRadius: 12 }}
+                style={{ borderRadius: 10 }}
             />
         </FlexWidget>
     );
