@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { ArtistService, type Artist } from '@/lib/artists/artistService';
+import { ArtistService, type Artist, type ListMeta } from '@/lib/artists/artistService';
 import { ApiError } from '@/lib/auth/apiClient';
 
 export default function ArtistsListPage() {
@@ -16,22 +16,48 @@ function ArtistsList() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  async function load() {
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await ArtistService.list({ limit: 50 });
-      setArtists(res.items);
-    } catch (e) {
-      setError(e instanceof ApiError ? e.message : 'Sanatçılar yüklenemedi.');
-    } finally {
-      setLoading(false);
-    }
-  }
+  const [page, setPage] = useState(1);
+  const [meta, setMeta] = useState<ListMeta | null>(null);
 
+  // Arama: anlik input (search) + debounce'lu sorgu (debouncedSearch).
+  // Eserler sayfasiyla ayni pattern — tutarlilik.
+  const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+
+  // 400ms yazma durunca sorgula. Sayfa 1'e donus SART:
+  // sayfa 5'teyken arama yapinca sonuc 2 sayfaysa bos ekran gelirdi.
   useEffect(() => {
-    load();
-  }, []);
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search);
+      setPage(1);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [search]);
+
+  // active guard: hizli yazarken eski istek gec donup yeni sonucu EZMESIN.
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const res = await ArtistService.list({
+          page,
+          limit: 20,
+          q: debouncedSearch.trim() || undefined,
+        });
+        if (!active) return;
+        setArtists(res.items);
+        setMeta(res.meta);
+      } catch (e) {
+        if (!active) return;
+        setError(e instanceof ApiError ? e.message : 'Sanatçılar yüklenemedi.');
+      } finally {
+        if (active) setLoading(false);
+      }
+    })();
+    return () => { active = false; };
+  }, [page, debouncedSearch]);
 
   async function handleDelete(id: string, name: string) {
     if (!confirm(`"${name}" silinsin mi? Bu işlem geri alınamaz.`)) return;
@@ -55,19 +81,33 @@ function ArtistsList() {
         </Link>
       </div>
 
+      {/* Filtre bari — eserler sayfasiyla ayni dil. */}
+      <div className="mb-4 flex items-center gap-4 text-sm">
+        <input
+          type="text"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Sanatçı ara…"
+          className="w-64 rounded border border-neutral-300 px-3 py-1 text-sm"
+        />
+        <span className="ml-auto text-sm text-neutral-500">{meta?.total ?? 0} sanatçı</span>
+      </div>
+
       {loading && <p className="text-neutral-500">Yükleniyor…</p>}
 
       {error && (
         <div className="rounded-md border border-red-200 bg-red-50 p-4 text-sm text-red-700">
           {error}{' '}
-          <button onClick={load} className="underline">
+          <button onClick={() => setPage((p) => p)} className="underline">
             Tekrar dene
           </button>
         </div>
       )}
 
       {!loading && !error && artists.length === 0 && (
-        <p className="text-neutral-500">Henüz sanatçı yok. Yeni ekleyerek başla.</p>
+        <p className="text-neutral-500">
+          {debouncedSearch ? 'Aramanızla eşleşen sanatçı yok.' : 'Henüz sanatçı yok. Yeni ekleyerek başla.'}
+        </p>
       )}
 
       {!loading && !error && artists.length > 0 && (
@@ -114,6 +154,29 @@ function ArtistsList() {
               ))}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {/* Sayfalama — meta'dan turer, eserler sayfasiyla ayni. */}
+      {!loading && !error && meta && meta.pages > 1 && (
+        <div className="mt-4 flex items-center justify-center gap-3 text-sm">
+          <button
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+            disabled={page <= 1}
+            className="rounded border border-neutral-300 px-3 py-1 disabled:opacity-40 hover:bg-neutral-50"
+          >
+            ← Önceki
+          </button>
+          <span className="text-neutral-600">
+            Sayfa {meta.page} / {meta.pages}
+          </span>
+          <button
+            onClick={() => setPage((p) => Math.min(meta.pages, p + 1))}
+            disabled={page >= meta.pages}
+            className="rounded border border-neutral-300 px-3 py-1 disabled:opacity-40 hover:bg-neutral-50"
+          >
+            Sonraki →
+          </button>
         </div>
       )}
     </div>
