@@ -13,12 +13,9 @@ async function fetchDaily() {
 
         const data = await res.json();
 
-        // GECICI TEST — dikey eser gorunumu icin. Test bitince SIL.
-        const TEST_THUMB: string | null = 'https://dia-cdn.tnsup.app/artworks/f56f4b10-6176-4e0f-ba97-70213ed636ae.jpg';
-
         return {
             artistName: data?.artist?.name ?? null,
-            thumbUrl: TEST_THUMB ?? data?.thumbUrl ?? data?.imageUrl ?? null,
+            thumbUrl: data?.thumbUrl ?? data?.imageUrl ?? null,
             error: false,
         };
     } catch {
