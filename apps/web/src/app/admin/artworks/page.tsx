@@ -36,6 +36,10 @@ export default function ArtworksListPage() {
     const [statusFilter, setStatusFilter] = useState<StatusFilter>('draft');
     const [hasImageOnly, setHasImageOnly] = useState(true);
 
+    // Toplu islem: secili eser id'leri. Set → O(1) ekle/cikar/kontrol.
+    const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+    const [bulkBusy, setBulkBusy] = useState(false);
+
     // Arama: input'un anlik degeri (search) + debounce'lu sorgu degeri (debouncedSearch).
     // Ikisi ayri cunku input her tusta guncellenmeli ama istek atilmamali.
     const [search, setSearch] = useState('');
@@ -50,6 +54,12 @@ export default function ArtworksListPage() {
         }, 400);
         return () => clearTimeout(timer);
     }, [search]);
+
+    // Secim sifirlama: sayfa/filtre/arama degisince gorunmeyen eserler secili KALMASIN.
+    // Cross-page secim = kullanicinin gormedigi eseri islemesi riski (kaza) → bilincli kisitlama.
+    useEffect(() => {
+        setSelectedIds(new Set());
+    }, [page, statusFilter, hasImageOnly, debouncedSearch]);
 
     // Güncellenen Fetch Fonksiyonu (useCallback ile)
     const fetchArtworks = useCallback(async () => {
@@ -137,6 +147,56 @@ export default function ArtworksListPage() {
         }
     }
 
+    // Tek satir secim toggle.
+    function toggleSelect(id: string) {
+        setSelectedIds((prev) => {
+            const next = new Set(prev);
+            if (next.has(id)) next.delete(id);
+            else next.add(id);
+            return next;
+        });
+    }
+
+    // "Tumunu sec" — sadece GORUNEN sayfadakiler (cross-page secim yok).
+    function toggleSelectAll() {
+        setSelectedIds((prev) => {
+            const allVisibleSelected = artworks.length > 0 && artworks.every((a) => prev.has(a.id));
+            // Hepsi seciliyse → temizle; degilse → gorunenlerin hepsini sec.
+            return allVisibleSelected ? new Set() : new Set(artworks.map((a) => a.id));
+        });
+    }
+
+    // Toplu yayin/kaldir. Promise.allSettled: kismi basari DURUSTCE raporlanir
+    // (biri patlarsa "hepsi oldu" demeyiz). Backend'e YENI endpoint yok —
+    // mevcut test edilmis setPublished dongude cagrilir.
+    async function handleBulkPublish(published: boolean) {
+        const ids = Array.from(selectedIds);
+        if (ids.length === 0) return;
+
+        const action = published ? 'yayınlanacak' : 'yayından kaldırılacak';
+        if (!confirm(`${ids.length} eser ${action}. Emin misiniz?`)) return;
+
+        setBulkBusy(true);
+        try {
+            const results = await Promise.allSettled(
+                ids.map((id) => ArtworkService.setPublished(id, published)),
+            );
+            const ok = results.filter((r) => r.status === 'fulfilled').length;
+            const fail = results.length - ok;
+
+            await fetchArtworks();
+            setSelectedIds(new Set());
+
+            if (fail === 0) {
+                alert(`${ok} eser güncellendi.`);
+            } else {
+                alert(`${ok} eser güncellendi, ${fail} eser başarısız oldu. Tekrar deneyebilirsiniz.`);
+            }
+        } finally {
+            setBulkBusy(false);
+        }
+    }
+
     return (
         <div className="mx-auto max-w-5xl p-6">
             <div className="mb-6 flex items-center justify-between">
@@ -182,6 +242,35 @@ export default function ArtworksListPage() {
                 <span className="text-sm text-gray-500 ml-auto">{meta?.total ?? 0} eser</span>
             </div>
 
+            {/* Toplu islem cubugu — sadece secim varken gorunur. */}
+            {selectedIds.size > 0 && (
+                <div className="mb-4 flex items-center gap-3 rounded-md border border-neutral-300 bg-neutral-100 px-4 py-2 text-sm">
+                    <span className="font-medium">{selectedIds.size} eser seçili</span>
+                    <button
+                        onClick={() => handleBulkPublish(true)}
+                        disabled={bulkBusy}
+                        className="rounded bg-emerald-600 px-3 py-1 text-white hover:bg-emerald-700 disabled:opacity-40"
+                    >
+                        Yayınla
+                    </button>
+                    <button
+                        onClick={() => handleBulkPublish(false)}
+                        disabled={bulkBusy}
+                        className="rounded bg-neutral-700 px-3 py-1 text-white hover:bg-neutral-800 disabled:opacity-40"
+                    >
+                        Yayından Kaldır
+                    </button>
+                    <button
+                        onClick={() => setSelectedIds(new Set())}
+                        disabled={bulkBusy}
+                        className="text-neutral-600 hover:underline disabled:opacity-40"
+                    >
+                        Seçimi Temizle
+                    </button>
+                    {bulkBusy && <span className="text-neutral-500">İşleniyor…</span>}
+                </div>
+            )}
+
             {loading && <p className="text-neutral-500">Yükleniyor…</p>}
 
             {error && (
@@ -202,6 +291,14 @@ export default function ArtworksListPage() {
                     <table className="w-full text-sm">
                         <thead className="bg-neutral-50 text-left text-neutral-600">
                             <tr>
+                                <th className="px-3 py-3 font-medium">
+                                    <input
+                                        type="checkbox"
+                                        checked={artworks.length > 0 && artworks.every((a) => selectedIds.has(a.id))}
+                                        onChange={toggleSelectAll}
+                                        title="Görünen sayfayı seç"
+                                    />
+                                </th>
                                 <th className="px-4 py-3 font-medium">Görsel</th>
                                 <th className="px-4 py-3 font-medium">Başlık</th>
                                 <th className="px-4 py-3 font-medium">Sanatçı</th>
@@ -216,6 +313,13 @@ export default function ArtworksListPage() {
                         <tbody>
                             {artworks.map((a) => (
                                 <tr key={a.id} className="border-t border-neutral-100 align-middle">
+                                    <td className="px-3 py-1.5">
+                                        <input
+                                            type="checkbox"
+                                            checked={selectedIds.has(a.id)}
+                                            onChange={() => toggleSelect(a.id)}
+                                        />
+                                    </td>
                                     {/* Görsel Sütunu */}
                                     <td className="px-3 py-1.5">
                                         {a.imageUrl ? (

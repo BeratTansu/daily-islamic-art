@@ -16,7 +16,12 @@ export type PublishStatus = 'published' | 'queued' | 'draft';
 
 export function getPublishStatus(artwork: Pick<Artwork, 'isPublished' | 'publishAt'>): PublishStatus {
     if (!artwork.isPublished) return 'draft';
-    if (!artwork.publishAt) return 'published'; // publishAt yoksa esik yok = gorunur
+    // publishAt yoksa backend invariant'i (publishAt <= now) SAGLANMAZ → feed'de gorunmez.
+    // O yuzden "published" DEGIL: isPublished:true ama esik yok = henuz gerçek yayinda degil.
+    // Bunu 'queued' say (admin onaylamis ama gorunur degil) → panel dogruyu soyler.
+    // Not: setPublished artik publishAt'i set ettigi icin bu durum normalde olusmaz;
+    // bu savunma amacli (import ham verisi vb.).
+    if (!artwork.publishAt) return 'queued';
     return new Date(artwork.publishAt).getTime() <= Date.now() ? 'published' : 'queued';
 }
 

@@ -518,11 +518,24 @@ export class ArtworkService {
     }
 
     async setPublished(id: string, published: boolean) {
-        await this.ensureExists(id);
+        const existing = await this.prisma.artwork.findUnique({ where: { id } });
+        if (!existing) throw new NotFoundException('Eser bulunamadı');
         try {
+            // "Yayinla" (published=true) derken publishAt bossa now() set et:
+            // gorunurluk invariant'i isPublished:true AND publishAt <= now() ister.
+            // publishAt null kalirsa eser "yayinda" isaretlenir ama feed'de GORUNMEZ
+            // (null <= now false) → panel yalan soyler, buton olu buton olur.
+            // publishAt zaten doluysa DOKUNMA (kuyruk tarihini/gelecek tarihi koru).
+            // "Yayindan kaldir" (published=false) publishAt'e dokunmaz: eser geri
+            // yayinlaninca eski sirasini korur (tarih zaten gecmisse hemen gorunur).
+            const shouldSetPublishAt = published && existing.publishAt === null;
+
             await this.prisma.artwork.update({
                 where: { id },
-                data: { isPublished: published },
+                data: {
+                    isPublished: published,
+                    ...(shouldSetPublishAt && { publishAt: new Date() }),
+                },
             });
             await this.invalidateArtworkCache(); // feed + daily bayatlamasın
             return this.prisma.artwork.findUnique({
