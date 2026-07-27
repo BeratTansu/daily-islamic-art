@@ -81,12 +81,16 @@ export interface ListArtworksParams {
   artistId?: string;
 }
 
-// Admin listesi query tipi (public list'ten ayrı — isPublished/hasImage sadece burada)
+// Backend AdminArtworkStatus ile birebir. isPublished+publishAt'ten turetilen durum.
+export type AdminArtworkStatus = 'published' | 'queued' | 'draft';
+
+// Admin listesi query tipi (public list'ten ayrı — isPublished/hasImage/status sadece burada)
 export interface AdminListParams {
   page?: number;
   limit?: number;
   isPublished?: boolean;
   hasImage?: boolean;
+  status?: AdminArtworkStatus;
   q?: string;
 }
 
@@ -127,6 +131,7 @@ export const ArtworkService = {
     const qs = new URLSearchParams();
     if (params.page) qs.set('page', String(params.page));
     if (params.limit) qs.set('limit', String(params.limit));
+    if (params.status) qs.set('status', params.status);
     if (params.isPublished !== undefined) qs.set('isPublished', String(params.isPublished));
     if (params.hasImage !== undefined) qs.set('hasImage', String(params.hasImage));
     if (params.q) qs.set('q', params.q);

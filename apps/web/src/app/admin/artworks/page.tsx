@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
-import { ArtworkService, type Artwork, type ArtworkType, type ListMeta } from '@/lib/artworks/artworkService';
+import { ArtworkService, type Artwork, type ArtworkType, type ListMeta, type AdminArtworkStatus } from '@/lib/artworks/artworkService';
 import { ApiError } from '@/lib/auth/apiClient';
 import {
     getPublishStatus,
@@ -21,7 +21,8 @@ const ARTWORK_TYPE_LABELS: Record<ArtworkType, string> = {
     DIGER: 'Diğer',
 };
 
-type PublishFilter = 'all' | 'published' | 'draft';
+// 'all' = filtre yok; digerleri backend status enum'u (published/queued/draft).
+type StatusFilter = 'all' | AdminArtworkStatus;
 
 export default function ArtworksListPage() {
     const [artworks, setArtworks] = useState<Artwork[]>([]);
@@ -32,7 +33,7 @@ export default function ArtworksListPage() {
     // Yeni Eklenen Filtre ve Sayfalama State'leri
     const [page, setPage] = useState(1);
     const [meta, setMeta] = useState<ListMeta | null>(null);
-    const [publishFilter, setPublishFilter] = useState<PublishFilter>('draft');
+    const [statusFilter, setStatusFilter] = useState<StatusFilter>('draft');
     const [hasImageOnly, setHasImageOnly] = useState(true);
 
     // Arama: input'un anlik degeri (search) + debounce'lu sorgu degeri (debouncedSearch).
@@ -58,7 +59,7 @@ export default function ArtworksListPage() {
             const res = await ArtworkService.listAdmin({
                 page,
                 limit: 20,
-                isPublished: publishFilter === 'all' ? undefined : publishFilter === 'published',
+                status: statusFilter === 'all' ? undefined : statusFilter,
                 hasImage: hasImageOnly ? true : undefined,
                 q: debouncedSearch.trim() || undefined,
             });
@@ -69,7 +70,7 @@ export default function ArtworksListPage() {
         } finally {
             setLoading(false);
         }
-    }, [page, publishFilter, hasImageOnly, debouncedSearch]);
+    }, [page, statusFilter, hasImageOnly, debouncedSearch]);
 
     // active guard: hizli yazarken eski istek gec donup yeni sonucu EZMESIN.
     useEffect(() => {
@@ -81,7 +82,7 @@ export default function ArtworksListPage() {
                 const res = await ArtworkService.listAdmin({
                     page,
                     limit: 20,
-                    isPublished: publishFilter === 'all' ? undefined : publishFilter === 'published',
+                    status: statusFilter === 'all' ? undefined : statusFilter,
                     hasImage: hasImageOnly ? true : undefined,
                     q: debouncedSearch.trim() || undefined,
                 });
@@ -96,7 +97,7 @@ export default function ArtworksListPage() {
             }
         })();
         return () => { active = false; };
-    }, [page, publishFilter, hasImageOnly, debouncedSearch]);
+    }, [page, statusFilter, hasImageOnly, debouncedSearch]);
 
     async function handleDelete(id: string, title: string | null) {
         const label = title ?? '(başlıksız eser)';
@@ -151,11 +152,12 @@ export default function ArtworksListPage() {
             {/* UI: Filtre Barı */}
             <div className="flex gap-4 items-center mb-4 text-sm">
                 <select
-                    value={publishFilter}
-                    onChange={(e) => { setPublishFilter(e.target.value as PublishFilter); setPage(1); }}
+                    value={statusFilter}
+                    onChange={(e) => { setStatusFilter(e.target.value as StatusFilter); setPage(1); }}
                     className="border rounded px-2 py-1 bg-white"
                 >
                     <option value="draft">Taslak</option>
+                    <option value="queued">Kuyrukta</option>
                     <option value="published">Yayında</option>
                     <option value="all">Hepsi</option>
                 </select>

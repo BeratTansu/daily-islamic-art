@@ -238,10 +238,24 @@ export class ArtworkService {
     }
 
     async findAllAdmin(query: QueryAdminArtworkDto) {
-        const { page = 1, limit = 20, type, script, artistId, q, isPublished, hasImage } = query;
+        const { page = 1, limit = 20, type, script, artistId, q, isPublished, hasImage, status } = query;
+
+        // status = uclu durum filtresi (published/queued/draft). isPublished+publishAt'ten turetilir.
+        // status verilirse isPublished'i EZER (status onu kapsar, ikisi celisirse karisik sonuc cikar).
+        const now = new Date();
+        const statusWhere: Prisma.ArtworkWhereInput =
+            status === 'published'
+                ? { isPublished: true, publishAt: { lte: now } }
+                : status === 'queued'
+                    ? { isPublished: true, publishAt: { gt: now } }
+                    : status === 'draft'
+                        ? { isPublished: false }
+                        : {};
 
         const where: Prisma.ArtworkWhereInput = {
-            ...(isPublished !== undefined && { isPublished }),
+            ...statusWhere,
+            // isPublished SADECE status yokken uygulanir (status varsa onu ezmesin).
+            ...(status === undefined && isPublished !== undefined && { isPublished }),
             ...(hasImage !== undefined && {
                 imageUrl: hasImage ? { not: null } : null,
             }),
@@ -259,11 +273,18 @@ export class ArtworkService {
             }),
         };
 
+        // Kuyruk gorunumunde publishAt artan (en yakin yayinlanacak ustte) — takvim mantigi.
+        // Diger durumlarda createdAt azalan (mevcut davranis korunur).
+        const orderBy: Prisma.ArtworkOrderByWithRelationInput =
+            status === 'queued'
+                ? { publishAt: 'asc' }
+                : { createdAt: 'desc' };
+
         const [items, total] = await this.prisma.$transaction([
             this.prisma.artwork.findMany({
                 where,
                 include: { artist: { select: { id: true, name: true, slug: true } } },
-                orderBy: { createdAt: 'desc' },
+                orderBy,
                 skip: (page - 1) * limit,
                 take: limit,
             }),
@@ -517,7 +538,7 @@ export class ArtworkService {
         await this.ensureExists(id);
         try {
             await this.prisma.artwork.delete({ where: { id } });
-            await this.invalidateArtworkCache(); // ← eser silindi → feed/daily bayat
+            await this.invalidateArtworkCache();
         } catch (e) {
             this.handlePrismaError(e);
         }
