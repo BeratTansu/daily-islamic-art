@@ -120,10 +120,12 @@ export async function setArtworkAsWallpaper(
             idempotent: true,
         });
 
+        // file:// URI'si baska uygulamaya (wallpaper secici) verilemez (FileUriExposedException).
+        // contentUri Expo'nun FileProvider'i uzerinden content:// dondurur → intent'e guvenle gecer.
         await IntentLauncher.startActivityAsync('android.intent.action.ATTACH_DATA', {
-            data: file.uri,
+            data: file.contentUri,
             type: 'image/jpeg',
-            flags: 1, // FLAG_GRANT_READ_URI_PERMISSION
+            flags: 1, // FLAG_GRANT_READ_URI_PERMISSION (content:// ile calisir)
         });
 
         return { ok: true };
