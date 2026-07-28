@@ -6,11 +6,16 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { ActionSheet, type ActionSheetItem } from '../../components/ActionSheet';
 import { setLocale, type SupportedLocale } from '../../i18n';
-import { colors, spacing, fontSize, fontWeight } from '../../constants/theme';
+import { spacing, fontSize, type ThemeColors } from '../../constants/theme';
+import { useTheme, useThemedStyles } from '../../context/ThemeContext';
 
 export default function Settings() {
     const { t, i18n } = useTranslation();
     const insets = useSafeAreaInsets();
+    // colors = inline kullanımlar için (Ionicons rengi gibi)
+    // styles = tema-duyarlı StyleSheet (factory modül seviyesinde, aşağıda)
+    const { colors } = useTheme();
+    const styles = useThemedStyles(makeStyles);
     const [langSheetOpen, setLangSheetOpen] = useState(false);
 
     // Aktif dile göre gösterilecek isim (satırda sağda "Türkçe"/"English" yazsın)
@@ -81,36 +86,39 @@ export default function Settings() {
     );
 }
 
-const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: colors.background,
-    },
-    row: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        paddingVertical: spacing.md,
-        paddingHorizontal: spacing.lg,
-        borderBottomWidth: 1,
-        borderBottomColor: colors.border,
-    },
-    rowLeft: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: spacing.md,
-    },
-    rowRight: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: spacing.xs,
-    },
-    rowLabel: {
-        fontSize: fontSize.heading,
-        color: colors.text,
-    },
-    rowValue: {
-        fontSize: fontSize.body,
-        color: colors.textMuted,
-    },
-});
+// MODÜL SEVİYESİNDE tanımlı olmak ZORUNDA: component içine alınırsa
+// her render'da yeni fonksiyon referansı olur, useMemo hiç tutmaz.
+const makeStyles = (c: ThemeColors) =>
+    StyleSheet.create({
+        container: {
+            flex: 1,
+            backgroundColor: c.background,
+        },
+        row: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            paddingVertical: spacing.md,
+            paddingHorizontal: spacing.lg,
+            borderBottomWidth: 1,
+            borderBottomColor: c.border,
+        },
+        rowLeft: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: spacing.md,
+        },
+        rowRight: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: spacing.xs,
+        },
+        rowLabel: {
+            fontSize: fontSize.heading,
+            color: c.text,
+        },
+        rowValue: {
+            fontSize: fontSize.body,
+            color: c.textMuted,
+        },
+    });
