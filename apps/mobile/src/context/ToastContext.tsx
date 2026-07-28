@@ -9,7 +9,8 @@ import {
 } from 'react';
 import { Animated, StyleSheet, Text } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { colors, spacing } from '../constants/theme';
+import { spacing } from '../constants/theme';
+import { useTheme } from './ThemeContext';
 
 type ToastType = 'success' | 'error';
 
@@ -28,6 +29,8 @@ const VISIBLE_MS = 2500;
 
 export function ToastProvider({ children }: { children: ReactNode }) {
     const insets = useSafeAreaInsets();
+    // ThemeProvider bu provider'in USTUNDE (kok _layout) — guvenle okunur.
+    const { colors } = useTheme();
     const [toast, setToast] = useState<ToastState>(null);
     const opacity = useRef(new Animated.Value(0)).current;
     const translateY = useRef(new Animated.Value(-20)).current;

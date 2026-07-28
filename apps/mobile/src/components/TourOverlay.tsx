@@ -5,7 +5,8 @@ import Svg, { Path } from 'react-native-svg';
 import { useTranslation } from 'react-i18next';
 import { useTour, type TourTargetKey } from '../context/TourContext';
 import { OnboardingStorage } from '../lib/onboarding/onboardingStorage';
-import { colors, spacing, fontSize, fontFamily } from '../constants/theme';
+import { spacing, fontSize, fontFamily, type ThemeColors } from '../constants/theme';
+import { useThemedStyles } from '../context/ThemeContext';
 
 // Delik cevresindeki bosluk — hedef nefes alsin.
 const PADDING = 8;
@@ -69,8 +70,10 @@ export function TourOverlay() {
     const { isActive, endTour, getTarget } = useTour();
     const { width: screenW, height: screenH } = useWindowDimensions();
     const insets = useSafeAreaInsets();
+    const styles = useThemedStyles(makeStyles);
     const [index, setIndex] = useState(0);
 
+    // Hook'lar erken return'un USTUNDE (Rules of Hooks).
     if (!isActive) return null;
 
     const step = STEPS[index];
@@ -217,21 +220,21 @@ export function TourOverlay() {
     );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (c: ThemeColors) => StyleSheet.create({
     fullMask: {
         backgroundColor: OVERLAY_COLOR,
     },
     holeBorder: {
         position: 'absolute',
         borderWidth: 2,
-        borderColor: colors.accent,
+        borderColor: c.accent,
         // borderRadius inline (HOLE_RADIUS tek kaynak).
     },
     box: {
         position: 'absolute',
         left: spacing.lg,
         right: spacing.lg,
-        backgroundColor: colors.background,
+        backgroundColor: c.background,
         borderRadius: 12,
         padding: spacing.lg,
         gap: spacing.sm,
@@ -239,11 +242,11 @@ const styles = StyleSheet.create({
     title: {
         fontFamily: fontFamily.serif,
         fontSize: fontSize.title,
-        color: colors.text,
+        color: c.text,
     },
     body: {
         fontSize: fontSize.body,
-        color: colors.textMuted,
+        color: c.textMuted,
         lineHeight: 21,
     },
     footer: {
@@ -260,10 +263,10 @@ const styles = StyleSheet.create({
         width: 7,
         height: 7,
         borderRadius: 4,
-        backgroundColor: colors.border,
+        backgroundColor: c.border,
     },
     dotActive: {
-        backgroundColor: colors.accent,
+        backgroundColor: c.accent,
     },
     actions: {
         flexDirection: 'row',
@@ -272,16 +275,16 @@ const styles = StyleSheet.create({
     },
     skip: {
         fontSize: fontSize.body,
-        color: colors.textMuted,
+        color: c.textMuted,
     },
     button: {
-        backgroundColor: colors.primary,
+        backgroundColor: c.primary,
         paddingHorizontal: spacing.lg,
         paddingVertical: spacing.sm,
         borderRadius: 8,
     },
     buttonText: {
         fontSize: fontSize.body,
-        color: colors.background,
+        color: c.onPrimary,
     },
 });

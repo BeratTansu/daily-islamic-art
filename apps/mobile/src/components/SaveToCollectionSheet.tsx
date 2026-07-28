@@ -9,7 +9,8 @@ import {
   StyleSheet,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, spacing, fontSize, fontWeight } from '../constants/theme';
+import { spacing, fontSize, fontWeight, type ThemeColors } from '../constants/theme';
+import { useTheme, useThemedStyles } from '../context/ThemeContext';
 import {
   collectionService,
   CollectionMembership,
@@ -25,6 +26,8 @@ type Props = {
 
 export function SaveToCollectionSheet({ visible, artworkId, onClose }: Props) {
   const { t } = useTranslation();
+  const { colors } = useTheme();
+  const styles = useThemedStyles(makeStyles);
   const [rows, setRows] = useState<CollectionMembership[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
@@ -181,14 +184,14 @@ export function SaveToCollectionSheet({ visible, artworkId, onClose }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (c: ThemeColors) => StyleSheet.create({
   backdrop: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.4)',
     justifyContent: 'flex-end',
   },
   sheet: {
-    backgroundColor: colors.background,
+    backgroundColor: c.background,
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
     paddingHorizontal: spacing.lg,
@@ -201,13 +204,13 @@ const styles = StyleSheet.create({
     width: 40,
     height: 4,
     borderRadius: 2,
-    backgroundColor: colors.border,
+    backgroundColor: c.border,
     marginBottom: spacing.md,
   },
   title: {
     fontSize: fontSize.subheading,
     fontWeight: fontWeight.semibold,
-    color: colors.text,
+    color: c.text,
     marginBottom: spacing.md,
   },
   newRow: {
@@ -216,12 +219,12 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     paddingVertical: spacing.md,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.border,
+    borderBottomColor: c.border,
     marginBottom: spacing.xs,
   },
   newText: {
     fontSize: fontSize.heading,
-    color: colors.primary,
+    color: c.primary,
     fontWeight: fontWeight.medium,
   },
   row: {
@@ -233,15 +236,15 @@ const styles = StyleSheet.create({
   rowText: {
     flex: 1,
     fontSize: fontSize.heading,
-    color: colors.text,
+    color: c.text,
   },
   center: {
     textAlign: 'center',
-    color: colors.textMuted,
+    color: c.textMuted,
     paddingVertical: spacing.xl,
   },
   errorText: {
     textAlign: 'center',
-    color: colors.danger,
+    color: c.danger,
   },
 });

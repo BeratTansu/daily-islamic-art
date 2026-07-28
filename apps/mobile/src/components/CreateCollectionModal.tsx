@@ -10,7 +10,8 @@ import {
     KeyboardAvoidingView,
     Platform,
 } from 'react-native';
-import { colors, spacing, fontSize, fontWeight } from '../constants/theme';
+import { spacing, fontSize, fontWeight, type ThemeColors } from '../constants/theme';
+import { useTheme, useThemedStyles } from '../context/ThemeContext';
 import { useTranslation } from 'react-i18next';
 
 type CreateCollectionModalProps = {
@@ -21,6 +22,8 @@ type CreateCollectionModalProps = {
 
 export function CreateCollectionModal({ visible, onClose, onCreate }: CreateCollectionModalProps) {
     const { t } = useTranslation();
+    const { colors } = useTheme();
+    const styles = useThemedStyles(makeStyles);
     const [name, setName] = useState('');
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -94,7 +97,7 @@ export function CreateCollectionModal({ visible, onClose, onCreate }: CreateColl
                                 disabled={!canSubmit}
                             >
                                 {submitting ? (
-                                    <ActivityIndicator size="small" color={colors.background} />
+                                    <ActivityIndicator size="small" color={colors.onPrimary} />
                                 ) : (
                                     <Text style={styles.createText}>{t('common.create')}</Text>
                                 )}
@@ -107,7 +110,7 @@ export function CreateCollectionModal({ visible, onClose, onCreate }: CreateColl
     );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (c: ThemeColors) => StyleSheet.create({
     backdrop: {
         flex: 1,
         backgroundColor: 'rgba(0,0,0,0.5)',
@@ -118,30 +121,30 @@ const styles = StyleSheet.create({
         paddingHorizontal: spacing.lg,
     },
     card: {
-        backgroundColor: colors.surface,
+        backgroundColor: c.surface,
         borderRadius: 14,
         padding: spacing.lg,
         borderWidth: 1,
-        borderColor: colors.border,
+        borderColor: c.border,
     },
     title: {
         fontSize: fontSize.subheading,
         fontWeight: fontWeight.semibold,
-        color: colors.text,
+        color: c.text,
         marginBottom: spacing.md,
     },
     input: {
         borderWidth: 1,
-        borderColor: colors.border,
+        borderColor: c.border,
         borderRadius: 10,
         paddingHorizontal: spacing.md,
         paddingVertical: spacing.sm,
         fontSize: fontSize.heading,
-        color: colors.text,
-        backgroundColor: colors.background,
+        color: c.text,
+        backgroundColor: c.background,
     },
     error: {
-        color: colors.danger,
+        color: c.danger,
         fontSize: fontSize.caption,
         marginTop: spacing.sm,
     },
@@ -157,12 +160,12 @@ const styles = StyleSheet.create({
         borderRadius: 8,
     },
     cancelText: {
-        color: colors.textMuted,
+        color: c.textMuted,
         fontSize: fontSize.body,
         fontWeight: fontWeight.semibold,
     },
     createBtn: {
-        backgroundColor: colors.primary,
+        backgroundColor: c.primary,
         paddingHorizontal: spacing.lg,
         paddingVertical: spacing.sm,
         borderRadius: 8,
@@ -173,7 +176,7 @@ const styles = StyleSheet.create({
         opacity: 0.5,
     },
     createText: {
-        color: colors.background,
+        color: c.onPrimary,
         fontSize: fontSize.body,
         fontWeight: fontWeight.semibold,
     },

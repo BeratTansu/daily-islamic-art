@@ -8,7 +8,8 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { colors, spacing, fontSize } from '../constants/theme';
+import { spacing, fontSize, type ThemeColors } from '../constants/theme';
+import { useTheme, useThemedStyles } from '../context/ThemeContext';
 
 export type ActionSheetItem = {
   icon: keyof typeof Ionicons.glyphMap;
@@ -26,6 +27,8 @@ type Props = {
 
 export function ActionSheet({ visible, onClose, items }: Props) {
   const insets = useSafeAreaInsets();
+  const { colors } = useTheme();
+  const styles = useThemedStyles(makeStyles);
 
   return (
     <Modal
@@ -71,14 +74,14 @@ export function ActionSheet({ visible, onClose, items }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (c: ThemeColors) => StyleSheet.create({
   backdrop: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.4)',
     justifyContent: 'flex-end',
   },
   sheet: {
-    backgroundColor: colors.background,
+    backgroundColor: c.background,
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
     paddingTop: spacing.sm,
@@ -92,6 +95,6 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: fontSize.heading,
-    color: colors.text,
+    color: c.text,
   },
 });
