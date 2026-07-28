@@ -56,6 +56,10 @@
         "language": "Dil",
         "languageTr": "Türkçe",
         "languageEn": "İngilizce",
+        "theme": "Tema",
+        "themeSystem": "Sistem",
+        "themeLight": "Açık",
+        "themeDark": "Koyu",
         "about": "Hakkında",
         "aboutBody": "Daily Islamic Art — İslam sanatını her gün keşfedin. Hat, tezhip, minyatür ve daha fazlası."
     },

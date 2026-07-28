@@ -56,8 +56,11 @@
         "language": "Language",
         "languageTr": "Turkish",
         "languageEn": "English",
-        "about": "About",
-        "aboutBody": "Daily Islamic Art — Discover Islamic art every day. Calligraphy, illumination, miniature, and more."
+        "theme": "Theme",
+        "themeSystem": "System",
+        "themeLight": "Light",
+        "themeDark": "Dark",
+        "about": "About"
     },
     "search": {
         "placeholder": "Search artist",

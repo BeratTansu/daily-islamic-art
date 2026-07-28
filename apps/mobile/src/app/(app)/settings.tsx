@@ -7,16 +7,18 @@ import { useTranslation } from 'react-i18next';
 import { ActionSheet, type ActionSheetItem } from '../../components/ActionSheet';
 import { setLocale, type SupportedLocale } from '../../i18n';
 import { spacing, fontSize, type ThemeColors } from '../../constants/theme';
-import { useTheme, useThemedStyles } from '../../context/ThemeContext';
+import { useTheme, useThemedStyles, type ThemeMode } from '../../context/ThemeContext';
 
 export default function Settings() {
     const { t, i18n } = useTranslation();
     const insets = useSafeAreaInsets();
     // colors = inline kullanımlar için (Ionicons rengi gibi)
     // styles = tema-duyarlı StyleSheet (factory modül seviyesinde, aşağıda)
-    const { colors } = useTheme();
+    // mode = kullanicinin SECIMI (satirda gosterilen), setMode = tek kapi
+    const { colors, mode, setMode } = useTheme();
     const styles = useThemedStyles(makeStyles);
     const [langSheetOpen, setLangSheetOpen] = useState(false);
+    const [themeSheetOpen, setThemeSheetOpen] = useState(false);
 
     // Aktif dile göre gösterilecek isim (satırda sağda "Türkçe"/"English" yazsın)
     const currentLangLabel =
@@ -40,6 +42,39 @@ export default function Settings() {
             icon: 'language-outline',
             label: t('settings.languageEn'),
             onPress: () => pickLocale('en'),
+        },
+    ];
+
+    // Satirda saginda gosterilen: SECIM (uygulanan sema degil).
+    // 'Sistem' secikken cihaz koyuysa bile 'Sistem' yazar — secim neyse o.
+    const currentThemeLabel =
+        mode === 'light'
+            ? t('settings.themeLight')
+            : mode === 'dark'
+                ? t('settings.themeDark')
+                : t('settings.themeSystem');
+
+    async function pickTheme(next: ThemeMode) {
+        setThemeSheetOpen(false);
+        // setMode: state + AsyncStorage persist (setLocale ile ayni felsefe).
+        await setMode(next);
+    }
+
+    const themeItems: ActionSheetItem[] = [
+        {
+            icon: 'phone-portrait-outline',
+            label: t('settings.themeSystem'),
+            onPress: () => pickTheme('system'),
+        },
+        {
+            icon: 'sunny-outline',
+            label: t('settings.themeLight'),
+            onPress: () => pickTheme('light'),
+        },
+        {
+            icon: 'moon-outline',
+            label: t('settings.themeDark'),
+            onPress: () => pickTheme('dark'),
         },
     ];
 
@@ -67,6 +102,18 @@ export default function Settings() {
                     </View>
                 </TouchableOpacity>
 
+                {/* Tema satırı — dil satırıyla birebir aynı desen */}
+                <TouchableOpacity style={styles.row} onPress={() => setThemeSheetOpen(true)}>
+                    <View style={styles.rowLeft}>
+                        <Ionicons name="contrast-outline" size={22} color={colors.text} />
+                        <Text style={styles.rowLabel}>{t('settings.theme')}</Text>
+                    </View>
+                    <View style={styles.rowRight}>
+                        <Text style={styles.rowValue}>{currentThemeLabel}</Text>
+                        <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+                    </View>
+                </TouchableOpacity>
+
                 {/* Hakkında satırı — basınca Alert */}
                 <TouchableOpacity style={styles.row} onPress={showAbout}>
                     <View style={styles.rowLeft}>
@@ -81,6 +128,12 @@ export default function Settings() {
                 visible={langSheetOpen}
                 onClose={() => setLangSheetOpen(false)}
                 items={langItems}
+            />
+
+            <ActionSheet
+                visible={themeSheetOpen}
+                onClose={() => setThemeSheetOpen(false)}
+                items={themeItems}
             />
         </View>
     );
