@@ -30,8 +30,11 @@ export function DailyArtworkWidget({ thumbUrl, error }: DailyArtworkWidgetProps)
         );
     }
 
-    // OverlapWidget: FlexWidget'ta overflow yok, OverlapWidget'ta var.
-    // Gorsel kutudan tasar, tasan kisim kirpilir → cerceve kalmaz, kose yuvarlakligi korunur.
+    // Samet karari (28/07): eser widget'i TAM doldursun, kirpilma kabul.
+    // contain → cover: gorsel kutuyu doldurur, tasan kisim kirpilir.
+    // padding ve ic borderRadius kaldirildi — cerceve olmayacaksa
+    // ikisi de "ince krem cizgi" olarak geri gelirdi.
+    // Boyutlar targetCell 4x3'e gore (app.config.ts ile birlikte degisir).
     return (
         <FlexWidget
             style={{
@@ -41,16 +44,15 @@ export function DailyArtworkWidget({ thumbUrl, error }: DailyArtworkWidgetProps)
                 alignItems: 'center',
                 borderRadius: 16,
                 backgroundColor: '#F5EDE1',
-                padding: 6,
             }}
             clickAction="OPEN_APP"
         >
             <ImageWidget
                 image={thumbUrl as `https:${string}`}
                 imageWidth={340}
-                imageHeight={150}
-                resizeMode="contain"
-                style={{ borderRadius: 10 }}
+                imageHeight={240}
+                resizeMode="cover"
+                style={{ borderRadius: 16 }}
             />
         </FlexWidget>
     );
