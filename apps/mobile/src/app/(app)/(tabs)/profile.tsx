@@ -15,13 +15,16 @@ import { useAuth } from '../../../context/AuthContext';
 import { AuthService, type AuthUser } from '../../../lib/auth/authService';
 import { artworkService } from '../../../lib/artworks/artworkService';
 import { collectionService } from '../../../lib/collections/collectionService';
-import { colors, spacing, fontSize, fontWeight, fontFamily } from '../../../constants/theme';
+import { spacing, fontSize, fontWeight, fontFamily, type ThemeColors } from '../../../constants/theme';
+import { useTheme, useThemedStyles } from '../../../context/ThemeContext';
 
 export default function Profile() {
     const { signOut } = useAuth();
     const insets = useSafeAreaInsets();
     const router = useRouter();
     const { t } = useTranslation();
+    const { colors } = useTheme();
+    const styles = useThemedStyles(makeStyles);
 
     const [user, setUser] = useState<AuthUser | null>(null);
     const [likeCount, setLikeCount] = useState<number | null>(null);
@@ -126,11 +129,11 @@ export default function Profile() {
     );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (c: ThemeColors) => StyleSheet.create({
     container: {
         flex: 1,
         justifyContent: 'space-between',
-        backgroundColor: colors.background,
+        backgroundColor: c.background,
         paddingHorizontal: spacing.lg,
     },
     topBar: {
@@ -144,7 +147,7 @@ const styles = StyleSheet.create({
         width: 88,
         height: 88,
         borderRadius: 44,
-        backgroundColor: colors.primary,
+        backgroundColor: c.primary,
         alignItems: 'center',
         justifyContent: 'center',
         marginBottom: spacing.md,
@@ -152,17 +155,18 @@ const styles = StyleSheet.create({
     avatarText: {
         fontSize: 36,
         fontWeight: '700',
-        color: '#fff',
+        // '#fff' hardcode idi: avatar zemini primary → onPrimary sozlesmesi gecerli
+        color: c.onPrimary,
     },
     name: {
         fontSize: 28,
         fontFamily: fontFamily.serif,
         letterSpacing: 0.5,
-        color: colors.text,
+        color: c.text,
     },
     email: {
         fontSize: fontSize.body,
-        color: colors.textMuted,
+        color: c.textMuted,
         marginTop: spacing.xs,
     },
     stats: {
@@ -178,37 +182,37 @@ const styles = StyleSheet.create({
     statNumber: {
         fontSize: fontSize.title,
         fontWeight: fontWeight.bold,
-        color: colors.text,
+        color: c.text,
     },
     statLabel: {
         fontSize: fontSize.caption,
-        color: colors.textMuted,
+        color: c.textMuted,
         marginTop: spacing.xs,
     },
     statDivider: {
         width: 1,
         height: 36,
-        backgroundColor: colors.border,
+        backgroundColor: c.border,
     },
     bottom: {
         gap: spacing.md,
     },
     signOutButton: {
         borderWidth: 1,
-        borderColor: colors.danger,
+        borderColor: c.danger,
         borderRadius: 8,
         paddingVertical: spacing.md,
         alignItems: 'center',
     },
     buttonDisabled: { opacity: 0.6 },
     signOutText: {
-        color: colors.danger,
+        color: c.danger,
         fontSize: fontSize.heading,
         fontWeight: fontWeight.semibold,
     },
     version: {
         textAlign: 'center',
         fontSize: fontSize.caption,
-        color: colors.textMuted,
+        color: c.textMuted,
     },
 });

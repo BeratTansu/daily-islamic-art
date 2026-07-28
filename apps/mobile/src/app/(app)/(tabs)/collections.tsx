@@ -15,7 +15,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { collectionService } from '../../../lib/collections/collectionService';
 import { artworkService } from '../../../lib/artworks/artworkService';
 import { CreateCollectionModal } from '../../../components/CreateCollectionModal';
-import { colors, spacing, fontSize, fontWeight, fontFamily } from '../../../constants/theme';
+import { spacing, fontSize, fontWeight, fontFamily, type ThemeColors } from '../../../constants/theme';
+import { useTheme, useThemedStyles } from '../../../context/ThemeContext';
 import { EmptyState } from '../../../components/EmptyState';
 import { ErrorState } from '../../../components/ErrorState';
 import { useTranslation } from 'react-i18next';
@@ -31,6 +32,8 @@ type CollectionRow = {
 
 export default function CollectionsScreen() {
     const { t } = useTranslation();
+    const { colors } = useTheme();
+    const styles = useThemedStyles(makeStyles);
     const [rows, setRows] = useState<CollectionRow[]>([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
@@ -129,7 +132,7 @@ export default function CollectionsScreen() {
                 <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
             </Pressable>
         ),
-        [goToRow, t],
+        [goToRow, t, styles, colors],
     );
 
     if (loading) {
@@ -165,7 +168,13 @@ export default function CollectionsScreen() {
                 renderItem={renderItem}
                 contentContainerStyle={styles.listContent}
                 refreshControl={
-                    <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
+                    <RefreshControl
+                        refreshing={refreshing}
+                        onRefresh={onRefresh}
+                        tintColor={colors.primary}
+                        colors={[colors.primary]}
+                        progressBackgroundColor={colors.surface}
+                    />
                 }
                 ListFooterComponent={
                     rows.length === 1 ? (
@@ -189,17 +198,17 @@ export default function CollectionsScreen() {
     );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (c: ThemeColors) => StyleSheet.create({
     safe: {
         flex: 1,
-        backgroundColor: colors.background,
+        backgroundColor: c.background,
     },
     centered: {
         flex: 1,
         alignItems: 'center',
         justifyContent: 'center',
         padding: spacing.lg,
-        backgroundColor: colors.background,
+        backgroundColor: c.background,
     },
     header: {
         flexDirection: 'row',
@@ -212,7 +221,7 @@ const styles = StyleSheet.create({
         fontSize: 28,
         fontFamily: fontFamily.serif,
         letterSpacing: 0.5,
-        color: colors.text,
+        color: c.text,
     },
     newBtn: {
         flexDirection: 'row',
@@ -222,7 +231,7 @@ const styles = StyleSheet.create({
         paddingVertical: spacing.xs ?? 4,
     },
     newBtnText: {
-        color: colors.primary,
+        color: c.primary,
         fontSize: fontSize.body,
         fontWeight: fontWeight.semibold,
     },
@@ -241,9 +250,9 @@ const styles = StyleSheet.create({
         width: 56,
         height: 56,
         borderRadius: 10,
-        backgroundColor: colors.surface,
+        backgroundColor: c.surface,
         borderWidth: 1,
-        borderColor: colors.border,
+        borderColor: c.border,
     },
     coverEmpty: {
         alignItems: 'center',
@@ -255,11 +264,11 @@ const styles = StyleSheet.create({
     rowTitle: {
         fontSize: fontSize.heading,
         fontWeight: fontWeight.semibold,
-        color: colors.text,
+        color: c.text,
     },
     rowCount: {
         fontSize: fontSize.caption,
-        color: colors.textMuted,
+        color: c.textMuted,
         marginTop: 2,
     },
 });

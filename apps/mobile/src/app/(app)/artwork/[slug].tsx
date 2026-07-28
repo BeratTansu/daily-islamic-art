@@ -22,7 +22,8 @@ import { useLikeContext } from '../../../context/LikeContext';
 import { LikeButton } from '../../../components/LikeButton';
 import { displayLikeCount } from '../../../lib/artworks/likeCount';
 import { SaveToCollectionSheet } from '../../../components/SaveToCollectionSheet';
-import { colors, spacing, fontSize, fontWeight, fontFamily } from '../../../constants/theme';
+import { spacing, fontSize, fontWeight, fontFamily, type ThemeColors } from '../../../constants/theme';
+import { useTheme, useThemedStyles } from '../../../context/ThemeContext';
 import { ActionSheet } from '../../../components/ActionSheet';
 import {
   downloadImageToGallery,
@@ -34,6 +35,8 @@ import { useTranslation } from 'react-i18next';
 export default function ArtworkDetailScreen() {
   const { slug } = useLocalSearchParams<{ slug: string }>();
   const { t, i18n } = useTranslation();
+  const { colors } = useTheme();
+  const styles = useThemedStyles(makeStyles);
   const isEN = i18n.language === 'en';
   const [artwork, setArtwork] = useState<ArtworkDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -294,6 +297,7 @@ export default function ArtworkDetailScreen() {
 }
 
 function DetailLikeButton({ artwork }: { artwork: ArtworkDetail }) {
+  const styles = useThemedStyles(makeStyles);
   const { toggle } = useLike();
   const { getIsLiked } = useLikeContext();
   const isLiked = getIsLiked(artwork.id, artwork.isLiked);
@@ -308,6 +312,7 @@ function DetailLikeButton({ artwork }: { artwork: ArtworkDetail }) {
 }
 
 function MetaRow({ label, value }: { label: string; value: string | null }) {
+  const styles = useThemedStyles(makeStyles);
   if (!value) return null;
   return (
     <View style={styles.metaRow}>
@@ -317,10 +322,10 @@ function MetaRow({ label, value }: { label: string; value: string | null }) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (c: ThemeColors) => StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: c.background,
   },
   content: {
     paddingBottom: spacing.xl,
@@ -330,12 +335,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: spacing.lg,
-    backgroundColor: colors.background,
+    backgroundColor: c.background,
   },
   image: {
     width: '100%',
     aspectRatio: 3 / 4,
-    backgroundColor: colors.surface,
+    backgroundColor: c.surface,
   },
   body: {
     padding: spacing.lg,
@@ -347,7 +352,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.lg,
   },
   title: {
-    color: colors.text,
+    color: c.text,
     fontSize: 28,
     fontFamily: fontFamily.serif,
     letterSpacing: 0.5,
@@ -369,43 +374,43 @@ const styles = StyleSheet.create({
   },
   likeCount: {
     fontSize: fontSize.body,
-    color: colors.textMuted,
+    color: c.textMuted,
   },
   textBlock: {
-    backgroundColor: colors.surface,
+    backgroundColor: c.surface,
     borderRadius: 10,
     padding: spacing.md,
     marginBottom: spacing.lg,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: c.border,
   },
   arabic: {
-    color: colors.text,
+    color: c.text,
     fontSize: 22,
     lineHeight: 36,
     textAlign: 'right',
     marginBottom: spacing.sm,
   },
   translation: {
-    color: colors.text,
+    color: c.text,
     fontSize: fontSize.body,
     fontStyle: 'italic',
     lineHeight: 22,
     marginBottom: spacing.xs,
   },
   sourceRef: {
-    color: colors.textMuted,
+    color: c.textMuted,
     fontSize: fontSize.caption,
   },
   description: {
-    color: colors.text,
+    color: c.text,
     fontSize: fontSize.body,
     lineHeight: 22,
     marginBottom: spacing.lg,
   },
   metaList: {
     borderTopWidth: 1,
-    borderTopColor: colors.border,
+    borderTopColor: c.border,
     paddingTop: spacing.md,
   },
   metaRow: {
@@ -414,11 +419,11 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
   },
   metaLabel: {
-    color: colors.textMuted,
+    color: c.textMuted,
     fontSize: fontSize.secondary,
   },
   metaValue: {
-    color: colors.text,
+    color: c.text,
     fontSize: fontSize.secondary,
     fontWeight: fontWeight.medium,
     flexShrink: 1,
@@ -426,22 +431,22 @@ const styles = StyleSheet.create({
     marginLeft: spacing.md,
   },
   errorText: {
-    color: colors.danger,
+    color: c.danger,
     fontSize: fontSize.body,
     marginBottom: spacing.md,
   },
   retryBtn: {
-    backgroundColor: colors.primary,
+    backgroundColor: c.primary,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.sm,
     borderRadius: 8,
   },
   retryText: {
-    color: colors.background,
+    color: c.onPrimary,
     fontWeight: fontWeight.semibold,
   },
   transcription: {
-    color: colors.text,
+    color: c.text,
     fontSize: fontSize.body,
     lineHeight: 24,
     marginBottom: spacing.sm,

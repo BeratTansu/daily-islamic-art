@@ -1,5 +1,6 @@
 import { View, Text, Pressable, StyleSheet } from 'react-native';
-import { colors, spacing, fontSize, fontWeight } from '../constants/theme';
+import { spacing, fontSize, fontWeight, type ThemeColors } from '../constants/theme';
+import { useThemedStyles } from '../context/ThemeContext';
 
 type Props = {
   // Zorunlu — çağıran ekran t() ile besler (i18n sızıntısı olmasın diye default yok).
@@ -9,6 +10,7 @@ type Props = {
 };
 
 export function ErrorState({ message, actionLabel, onAction }: Props) {
+  const styles = useThemedStyles(makeStyles);
   return (
     <View style={styles.wrap}>
       <Text style={styles.message}>{message}</Text>
@@ -19,7 +21,7 @@ export function ErrorState({ message, actionLabel, onAction }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (c: ThemeColors) => StyleSheet.create({
   wrap: {
     flex: 1,
     alignItems: 'center',
@@ -29,18 +31,18 @@ const styles = StyleSheet.create({
   },
   message: {
     fontSize: fontSize.heading,
-    color: colors.text, // danger değil — kırmızı metin fazla agresif, buton bağlamı yeterli
+    color: c.text, // danger değil — kırmızı metin fazla agresif, buton bağlamı yeterli
     textAlign: 'center',
   },
   button: {
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.sm,
     borderRadius: 8,
-    backgroundColor: colors.primary,
+    backgroundColor: c.primary,
   },
   buttonText: {
     fontSize: fontSize.body,
     fontWeight: fontWeight.semibold,
-    color: colors.background, // primary üstünde beyaz
+    color: c.onPrimary, // primary zemini ustundeki metin — koyu modda background okunmazdi
   },
 });
