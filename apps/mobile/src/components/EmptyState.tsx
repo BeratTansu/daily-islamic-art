@@ -1,6 +1,7 @@
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, spacing, fontSize, fontWeight } from '../constants/theme';
+import { spacing, fontSize, fontWeight, type ThemeColors } from '../constants/theme';
+import { useTheme, useThemedStyles } from '../context/ThemeContext';
 
 type Props = {
   icon: keyof typeof Ionicons.glyphMap;
@@ -20,6 +21,8 @@ export function EmptyState({
   onAction,
   fillScreen = true,
 }: Props) {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(makeStyles);
   return (
     <View style={[styles.wrap, !fillScreen && styles.wrapCompact]}>
       <Ionicons name={icon} size={48} color={colors.textMuted} />
@@ -33,7 +36,7 @@ export function EmptyState({
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (c: ThemeColors) => StyleSheet.create({
   wrap: {
     flex: 1,
     alignItems: 'center',
@@ -47,7 +50,7 @@ const styles = StyleSheet.create({
   },
   message: {
     fontSize: fontSize.heading,
-    color: colors.textMuted,
+    color: c.textMuted,
     textAlign: 'center',
   },
   button: {
@@ -55,11 +58,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.sm,
     borderRadius: 8,
-    backgroundColor: colors.primary,
+    backgroundColor: c.primary,
   },
   buttonText: {
     fontSize: fontSize.body,
     fontWeight: fontWeight.semibold,
-    color: colors.background, // primary üstünde beyaz
+    // background DEGIL onPrimary: koyu modda background koyu kahve →
+    // koyu yesil butonun ustunde okunmazdi. onPrimary "primary zemini
+    // ustundeki metin" sozlesmesi, iki palette de dogru.
+    color: c.onPrimary,
   },
 });

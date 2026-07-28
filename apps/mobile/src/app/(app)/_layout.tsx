@@ -1,10 +1,15 @@
 import { Redirect, Stack } from 'expo-router';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { useAuth } from '../../context/AuthContext';
-import { colors } from '../../constants/theme';
+import { type ThemeColors } from '../../constants/theme';
+import { useTheme, useThemedStyles, useThemedScreenOptions } from '../../context/ThemeContext';
 
 export default function AppLayout() {
   const { status } = useAuth();
+  const { colors } = useTheme();
+  const styles = useThemedStyles(makeStyles);
+  // Kok Stack ile AYNI kaynak: settings/detay header'i bu Stack'ten miras alir.
+  const screenOptions = useThemedScreenOptions();
 
   if (status === 'loading') {
     return (
@@ -18,14 +23,15 @@ export default function AppLayout() {
     return <Redirect href="/welcome" />;
   }
 
-  return <Stack screenOptions={{ headerShown: false }} />;
+  return <Stack screenOptions={screenOptions} />;
 }
 
-const styles = StyleSheet.create({
-  center: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.background,
-  },
-});
+const makeStyles = (c: ThemeColors) =>
+  StyleSheet.create({
+    center: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: c.background,
+    },
+  });

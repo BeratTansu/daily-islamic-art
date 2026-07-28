@@ -8,7 +8,8 @@ import { runOnJS } from 'react-native-reanimated';
 import { ArtworkListItem } from '../lib/artworks/artworkService';
 import { LikeButton } from './LikeButton';
 import { displayLikeCount } from '../lib/artworks/likeCount';
-import { colors, spacing, fontSize, fontWeight } from '../constants/theme';
+import { spacing, fontSize, fontWeight, type ThemeColors } from '../constants/theme';
+import { useThemedStyles } from '../context/ThemeContext';
 
 // --- Kalp + begeni sayisi ---
 function LikeMeta({
@@ -24,6 +25,7 @@ function LikeMeta({
     displayIsLiked: boolean;
     onToggleLike: (id: string, isLiked: boolean) => void;
 }) {
+    const styles = useThemedStyles(makeStyles);
     const count = displayLikeCount(baseCount, backendIsLiked, displayIsLiked);
     return (
         <View style={styles.likeMeta}>
@@ -71,6 +73,7 @@ export function ArtworkCard({
     onToggleLike: (id: string, isLiked: boolean) => void;
     onDoubleTapLike: (id: string, isLiked: boolean) => void;
 }) {
+    const styles = useThemedStyles(makeStyles);
     const gesture = useImageGesture(item.id, item.slug, isLiked, onPress, onDoubleTapLike);
 
     return (
@@ -101,19 +104,20 @@ export function ArtworkCard({
     );
 }
 
-const styles = StyleSheet.create({
+// Modul seviyesinde: component icine alinirsa her render'da yeni referans olur.
+const makeStyles = (c: ThemeColors) => StyleSheet.create({
     card: {
-        backgroundColor: colors.surface,
+        backgroundColor: c.surface,
         borderRadius: 10,
         overflow: 'hidden',
         marginBottom: spacing.md,
         borderWidth: 1,
-        borderColor: colors.border,
+        borderColor: c.border,
     },
     cardImage: {
         width: '100%',
         aspectRatio: 1,
-        backgroundColor: colors.surface,
+        backgroundColor: c.surface,
     },
     metaRow: {
         flexDirection: 'row',
@@ -133,11 +137,11 @@ const styles = StyleSheet.create({
     },
     likeCount: {
         fontSize: fontSize.caption,
-        color: colors.textMuted,
+        color: c.textMuted,
     },
     cardArtist: {
         fontSize: fontSize.heading,
         fontWeight: fontWeight.semibold,
-        color: colors.text,
+        color: c.text,
     },
 });

@@ -1,13 +1,16 @@
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
-import { colors } from '../../../constants/theme';
+import { useTheme } from '../../../context/ThemeContext';
 
 // Tab navigator: Feed + Koleksiyonlar. Guard bir üst seviyede ((app)/_layout),
 // buraya ulaşan zaten authenticated. artwork/[slug] bu grubun DIŞINDA (Stack'te)
 // → detaya girince tab bar kaybolur, tam ekran olur.
 export default function TabsLayout() {
     const { t } = useTranslation();
+    // Tab bar option'lari native tarafta yasiyor — Stack header'i gibi
+    // temadan beslenmezse koyu ekranin altinda krem serit kalir.
+    const { colors } = useTheme();
     return (
         <Tabs
             screenOptions={{

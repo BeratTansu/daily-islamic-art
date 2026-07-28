@@ -13,7 +13,8 @@ import { ArtworkGrid } from '../../components/ArtworkGrid';
 import { artworkService } from '../../lib/artworks/artworkService';
 import type { ArtworkListItem } from '../../lib/artworks/artworkService';
 import { useDebounce } from '../../lib/hooks/useDebounce';
-import { colors, spacing, fontSize } from '../../constants/theme';
+import { spacing, fontSize, type ThemeColors } from '../../constants/theme';
+import { useTheme, useThemedStyles } from '../../context/ThemeContext';
 import { useNavigationGuard } from '../../lib/hooks/useNavigationGuard';
 import { EmptyState } from '../../components/EmptyState';
 import { ErrorState } from '../../components/ErrorState';
@@ -21,6 +22,8 @@ import { useTranslation } from 'react-i18next';
 
 export default function SearchScreen() {
     const { t } = useTranslation();
+    const { colors } = useTheme();
+    const styles = useThemedStyles(makeStyles);
     const [query, setQuery] = useState('');
     const [results, setResults] = useState<ArtworkListItem[]>([]);
     const [loading, setLoading] = useState(false);
@@ -124,10 +127,10 @@ export default function SearchScreen() {
     );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (c: ThemeColors) => StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: colors.background,
+        backgroundColor: c.background,
     },
     header: {
         flexDirection: 'row',
@@ -145,7 +148,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         gap: spacing.sm,
-        backgroundColor: colors.surface,
+        backgroundColor: c.surface,
         borderRadius: 10,
         paddingHorizontal: spacing.md,
         height: 44,
@@ -153,7 +156,7 @@ const styles = StyleSheet.create({
     input: {
         flex: 1,
         fontSize: fontSize.heading,
-        color: colors.text,
+        color: c.text,
     },
     center: {
         flex: 1,

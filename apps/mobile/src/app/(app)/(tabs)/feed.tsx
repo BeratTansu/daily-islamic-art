@@ -30,7 +30,8 @@ import { LikeButton } from '../../../components/LikeButton';
 import { displayLikeCount } from '../../../lib/artworks/likeCount';
 import { FeedPage } from '../../../components/FeedPage';
 import { DiscoverPage } from '../../../components/DiscoverPage';
-import { colors, spacing, fontSize, fontWeight, fontFamily } from '../../../constants/theme';
+import { spacing, fontSize, fontWeight, fontFamily, type ThemeColors } from '../../../constants/theme';
+import { useTheme, useThemedStyles } from '../../../context/ThemeContext';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { TourTarget } from '../../../components/TourTarget';
@@ -42,6 +43,8 @@ const HEADER_MIN = 88;
 
 export default function FeedScreen() {
     const { t } = useTranslation();
+    const { colors } = useTheme();
+    const styles = useThemedStyles(makeStyles);
     const [daily, setDaily] = useState<ArtworkDetail | null>(null);
     const [dailyLoading, setDailyLoading] = useState(true);
 
@@ -116,7 +119,7 @@ export default function FeedScreen() {
                 onDoubleTapLike={likeOnly}
             />
         );
-    }, [daily, getIsLiked, goToDetail, toggle, likeOnly, t]);
+    }, [daily, getIsLiked, goToDetail, toggle, likeOnly, t, styles]);
 
     return (
         <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['top']}>
@@ -192,6 +195,7 @@ function LikeMeta({
      *  CompactDailyCard gorunmezken de olculur → yanlis koordinat. */
     isTourTarget?: boolean;
 }) {
+    const styles = useThemedStyles(makeStyles);
     const count = displayLikeCount(baseCount, backendIsLiked, displayIsLiked);
     const content = (
         <>
@@ -225,6 +229,7 @@ function DailyHeader({
     onDoubleTapLike: (id: string, isLiked: boolean) => void;
 }) {
     const { t } = useTranslation();
+    const styles = useThemedStyles(makeStyles);
     const { top, height } = useHeaderMeasurements();
     const [compactActive, setCompactActive] = useState(false);
 
@@ -313,6 +318,7 @@ function CompactDailyCard({
     onToggleLike: (id: string, isLiked: boolean) => void;
 }) {
     const { t } = useTranslation();
+    const styles = useThemedStyles(makeStyles);
     return (
         <Pressable style={styles.compactCard} onPress={() => onPress(daily.slug)}>
             <Image
@@ -350,6 +356,7 @@ function DailyCard({
     onToggleLike: (id: string, isLiked: boolean) => void;
     onDoubleTapLike: (id: string, isLiked: boolean) => void;
 }) {
+    const styles = useThemedStyles(makeStyles);
     const gesture = useImageGesture(daily.id, daily.slug, isLiked, onPress, onDoubleTapLike);
 
     return (
@@ -383,13 +390,13 @@ function DailyCard({
     );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (c: ThemeColors) => StyleSheet.create({
     searchInHeader: {
         paddingTop: spacing.sm,
         marginBottom: spacing.md,
     },
     headerContainer: {
-        backgroundColor: colors.background,
+        backgroundColor: c.background,
         elevation: 0,
         shadowOpacity: 0,
     },
@@ -407,17 +414,17 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         gap: spacing.sm,
-        backgroundColor: colors.surface,
+        backgroundColor: c.surface,
         borderRadius: 10,
         borderWidth: 1,
-        borderColor: colors.border,
+        borderColor: c.border,
         padding: spacing.sm,
     },
     compactImage: {
         width: 56,
         height: 56,
         borderRadius: 8,
-        backgroundColor: colors.surface,
+        backgroundColor: c.surface,
     },
     compactInfo: {
         flex: 1,
@@ -426,17 +433,17 @@ const styles = StyleSheet.create({
     compactArtist: {
         fontSize: 17,
         fontFamily: fontFamily.serif,
-        color: colors.text,
+        color: c.text,
     },
     compactLabel: {
         fontSize: fontSize.caption,
-        color: colors.textMuted,
+        color: c.textMuted,
     },
     dailyWrap: {
         marginBottom: spacing.md,
     },
     dailyLabel: {
-        color: colors.accent,
+        color: c.accent,
         fontSize: fontSize.caption,
         fontWeight: fontWeight.semibold,
         // textTransform: 'uppercase' KALDIRILDI - uppercase tuzağı için
@@ -455,28 +462,28 @@ const styles = StyleSheet.create({
     dividerLine: {
         flex: 1,
         height: 1,
-        backgroundColor: colors.accent,
+        backgroundColor: c.accent,
     },
     dividerMark: {
-        color: colors.accent,
+        color: c.accent,
         fontSize: 14,
     },
     dailyArtist: {
         fontSize: 22,
         fontFamily: fontFamily.serif,
-        color: colors.text,
+        color: c.text,
     },
     dailyCard: {
-        backgroundColor: colors.surface,
+        backgroundColor: c.surface,
         borderRadius: 12,
         overflow: 'hidden',
         borderWidth: 1,
-        borderColor: colors.border,
+        borderColor: c.border,
     },
     dailyImage: {
         width: '100%',
         aspectRatio: 4 / 3,
-        backgroundColor: colors.surface,
+        backgroundColor: c.surface,
     },
     metaRow: {
         flexDirection: 'row',
@@ -496,6 +503,6 @@ const styles = StyleSheet.create({
     },
     likeCount: {
         fontSize: fontSize.caption,
-        color: colors.textMuted,
+        color: c.textMuted,
     },
 });

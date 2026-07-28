@@ -6,7 +6,8 @@ import Animated, {
     Extrapolation,
 } from 'react-native-reanimated';
 import type { TabBarProps } from 'react-native-collapsible-tab-view';
-import { colors, spacing, fontSize, fontWeight } from '../constants/theme';
+import { spacing, fontSize, fontWeight, type ThemeColors } from '../constants/theme';
+import { useThemedStyles } from '../context/ThemeContext';
 import { useTranslation } from 'react-i18next';
 
 const TAB_COUNT = 4;
@@ -18,6 +19,7 @@ export function SortTabBar({
     onTabPress,
 }: TabBarProps) {
     const { t } = useTranslation();
+    const styles = useThemedStyles(makeStyles);
 
     // Bar'in IC genisligini olc (padding sonrasi). Indicator bunun uzerinden
     // hesaplanir — Dimensions.get degil, cunku padding/rotasyon yalan soyler.
@@ -86,6 +88,7 @@ function TabLabel({
     position: number;
     label: string;
 }) {
+    const styles = useThemedStyles(makeStyles);
     const style = useAnimatedStyle(() => {
         // Bu sekmeye olan "uzaklik" (0 = tam ustunde, 1 = komsu).
         const dist = Math.abs(indexDecimal.value - position);
@@ -98,9 +101,9 @@ function TabLabel({
     );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (c: ThemeColors) => StyleSheet.create({
     wrap: {
-        backgroundColor: colors.background,
+        backgroundColor: c.background,
         paddingHorizontal: spacing.md,
         paddingBottom: spacing.sm,
     },
@@ -109,7 +112,7 @@ const styles = StyleSheet.create({
         position: 'relative',
         // Alt cizgi zemini (indicator bunun uzerinde kayar)
         borderBottomWidth: 1,
-        borderBottomColor: colors.border,
+        borderBottomColor: c.border,
     },
     tab: {
         flex: 1,
@@ -119,14 +122,14 @@ const styles = StyleSheet.create({
     label: {
         fontSize: fontSize.body,
         fontWeight: fontWeight.semibold,
-        color: colors.primary,
+        color: c.primary,
     },
     indicator: {
         position: 'absolute',
         bottom: -1, // borderBottom'un uzerine otursun
         left: 0,
         height: 2,
-        backgroundColor: colors.primary,
+        backgroundColor: c.primary,
         borderRadius: 1,
     },
 });

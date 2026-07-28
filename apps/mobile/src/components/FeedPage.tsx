@@ -14,7 +14,8 @@ import {
 } from '../lib/artworks/artworkService';
 import { useLike } from '../lib/artworks/useLike';
 import { useLikeContext } from '../context/LikeContext';
-import { colors, spacing } from '../constants/theme';
+import { spacing, type ThemeColors } from '../constants/theme';
+import { useTheme, useThemedStyles } from '../context/ThemeContext';
 import { EmptyState } from './EmptyState';
 import { ErrorState } from './ErrorState';
 import { ArtworkCard } from './ArtworkCard';
@@ -30,6 +31,8 @@ export function FeedPage({
     onDailyRefresh: () => Promise<void>;
 }) {
     const { t } = useTranslation();
+    const { colors } = useTheme();
+    const styles = useThemedStyles(makeStyles);
     const [items, setItems] = useState<ArtworkListItem[]>([]);
     const [page, setPage] = useState(1);
     const [hasMore, setHasMore] = useState(true);
@@ -139,7 +142,15 @@ export function FeedPage({
             onEndReached={loadMore}
             onEndReachedThreshold={0.5}
             refreshControl={
-                <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
+                // tintColor iOS, colors/progressBackgroundColor Android.
+                // Android'siz birakilirsa koyu modda spinner koyu zeminde kayboluyor.
+                <RefreshControl
+                    refreshing={refreshing}
+                    onRefresh={onRefresh}
+                    tintColor={colors.primary}
+                    colors={[colors.primary]}
+                    progressBackgroundColor={colors.surface}
+                />
             }
             ListFooterComponent={
                 loadingMore ? (
@@ -155,17 +166,17 @@ export function FeedPage({
     );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (c: ThemeColors) => StyleSheet.create({
     centered: {
         flex: 1,
         alignItems: 'center',
         justifyContent: 'center',
         padding: spacing.lg,
-        backgroundColor: colors.background,
+        backgroundColor: c.background,
     },
     listContent: {
         padding: spacing.md,
-        backgroundColor: colors.background,
+        backgroundColor: c.background,
         flexGrow: 1,
     },
     footer: {

@@ -1,10 +1,16 @@
 import { useEffect, useState } from 'react';
 import { Stack } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useFonts, CormorantGaramond_500Medium } from '@expo-google-fonts/cormorant-garamond';
 import * as SplashScreen from 'expo-splash-screen';
 import { applyStoredLocale } from '../i18n';
-import { ThemeProvider, applyStoredThemeMode, useTheme } from '../context/ThemeContext';
+import {
+  ThemeProvider,
+  applyStoredThemeMode,
+  useTheme,
+  useThemedScreenOptions,
+} from '../context/ThemeContext';
 import { AuthProvider } from '../context/AuthContext';
 import { LikeProvider } from '../context/LikeContext';
 import { TourProvider } from '../context/TourContext';
@@ -77,20 +83,17 @@ export default function RootLayout() {
  * Ayrı component çünkü useTheme, ThemeProvider'ın İÇİNDE çağrılmalı.
  */
 function ThemedStack() {
-  const { colors, scheme } = useTheme();
+  const { scheme } = useTheme();
+  const screenOptions = useThemedScreenOptions();
 
   return (
-    <Stack
-      screenOptions={{
-        headerShown: false,
-        headerStyle: { backgroundColor: colors.surface },
-        headerTintColor: colors.text,
-        headerTitleStyle: { color: colors.text },
-        // Ekranlar arası geçişte beyaz flash olmasın
-        contentStyle: { backgroundColor: colors.background },
-      }}
-      // Modal/sheet üstündeki sistem çizimleri için şema ipucu
-      key={scheme}
-    />
+    <>
+      {/* Status bar ikonlari (saat/pil) sistemin degil BIZIM semamizi takip
+          etmeli: koyu zemin → acik ikon, krem zemin → koyu ikon.
+          Yonetilmezse Android sistem temasina gore beyaz basar ve krem
+          ekranlarda ikonlar kayboluyor. */}
+      <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
+      <Stack screenOptions={screenOptions} />
+    </>
   );
 }

@@ -97,3 +97,27 @@ export function useThemedStyles<T>(factory: (c: ThemeColors) => T): T {
     const { colors } = useTheme();
     return useMemo(() => factory(colors), [factory, colors]);
 }
+
+/**
+ * Native header/ekran renkleri — TEK KAYNAK.
+ *
+ * İki Stack var (kök `_layout` + `(app)/_layout`) ve `headerShown: true`
+ * yapan ekranlar (settings, artwork detay) hangisinin altındaysa onun
+ * option'larını miras alır. İkisine birden verilmezse header tema değişimini
+ * kaçırır (koyu ekranın üstünde beyaz şerit).
+ */
+export function useThemedScreenOptions() {
+  const { colors } = useTheme();
+
+  return useMemo(
+    () => ({
+      headerShown: false,
+      headerStyle: { backgroundColor: colors.surface },
+      headerTintColor: colors.text,
+      headerTitleStyle: { color: colors.text },
+      // Ekranlar arasi gecerken beyaz flash olmasin
+      contentStyle: { backgroundColor: colors.background },
+    }),
+    [colors],
+  );
+}
