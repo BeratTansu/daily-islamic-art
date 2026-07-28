@@ -66,13 +66,6 @@ export const darkColors: ThemeColors = {
 
 export { lightColors };
 
-/**
- * GEÇİŞ ALIAS'I — dönüştürülmemiş ekranlar derlenmeye devam etsin diye.
- * Bu alias sabittir (tema değişimini TAKİP ETMEZ). Tüm ekranlar
- * useThemedStyles/useTheme'e geçince SİLİNECEK.
- */
-export const colors = lightColors;
-
 export const spacing = {
   xs: 4,
   sm: 8,

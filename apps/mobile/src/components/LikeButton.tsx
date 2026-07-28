@@ -1,7 +1,8 @@
 // src/components/LikeButton.tsx
 import { Pressable, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, spacing } from '../constants/theme';
+import { spacing } from '../constants/theme';
+import { useTheme } from '../context/ThemeContext';
 
 interface Props {
     isLiked: boolean;
@@ -12,6 +13,7 @@ interface Props {
 // Aptal component: state tutmaz, sadece çizer.
 // Optimistic state'i veriyi sahiplenen ekran tutar (feed listesi / detay objesi).
 export function LikeButton({ isLiked, onPress, size = 24 }: Props) {
+    const { colors } = useTheme();
     return (
         <Pressable
             onPress={onPress}

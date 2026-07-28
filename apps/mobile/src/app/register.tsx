@@ -10,12 +10,15 @@ import {
     View,
 } from 'react-native';
 import { useAuth } from '../context/AuthContext';
-import { colors, spacing, fontFamily } from '../constants/theme';
+import { spacing, fontFamily, type ThemeColors } from '../constants/theme';
+import { useTheme, useThemedStyles } from '../context/ThemeContext';
 import { router } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 
 export default function Register() {
     const { t } = useTranslation();
+    const { colors } = useTheme();
+    const styles = useThemedStyles(makeStyles);
     const { register } = useAuth();
     const [displayName, setDisplayName] = useState('');
     const [email, setEmail] = useState('');
@@ -113,7 +116,8 @@ export default function Register() {
                     disabled={submitting}
                 >
                     {submitting ? (
-                        <ActivityIndicator color="#fff" />
+                        // '#fff' hardcode idi: buton zemini primary → onPrimary sozlesmesi
+                        <ActivityIndicator color={colors.onPrimary} />
                     ) : (
                         <Text style={styles.buttonText}>{t('auth.registerSubmit')}</Text>
                     )}
@@ -131,59 +135,61 @@ export default function Register() {
     );
 }
 
-const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        justifyContent: 'center',
-        backgroundColor: colors.background,
-        paddingHorizontal: spacing.lg,
-    },
-    form: { gap: spacing.md },
-    title: {
-        fontSize: 32,
-        fontFamily: fontFamily.serif,
-        letterSpacing: 1,
-        color: colors.text,
-        textAlign: 'center',
-        marginBottom: spacing.lg,
-    },
-    input: {
-        borderWidth: 1,
-        borderColor: colors.border,
-        borderRadius: 8,
-        paddingVertical: spacing.sm,
-        paddingHorizontal: spacing.md,
-        fontSize: 16,
-        color: colors.text,
-        backgroundColor: colors.surface,
-    },
-    error: { color: colors.danger, fontSize: 14 },
-    backButton: {
-        alignSelf: 'flex-start',
-        marginBottom: spacing.sm,
-        paddingVertical: spacing.xs,
-    },
-    backButtonText: {
-        color: colors.textMuted,
-        fontSize: 15,
-        fontWeight: '600',
-    },
-    button: {
-        backgroundColor: colors.primary,
-        borderRadius: 8,
-        paddingVertical: spacing.md,
-        alignItems: 'center',
-        marginTop: spacing.sm,
-    },
-    buttonDisabled: { opacity: 0.6 },
-    buttonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
-    linkWrapper: {
-        alignItems: 'center',
-        marginTop: spacing.sm,
-    },
-    link: {
-        color: colors.primary,
-        fontSize: 14,
-        fontWeight: '600',
-    },
-});
+const makeStyles = (c: ThemeColors) =>
+    StyleSheet.create({
+        container: {
+            flex: 1,
+            justifyContent: 'center',
+            backgroundColor: c.background,
+            paddingHorizontal: spacing.lg,
+        },
+        form: { gap: spacing.md },
+        title: {
+            fontSize: 32,
+            fontFamily: fontFamily.serif,
+            letterSpacing: 1,
+            color: c.text,
+            textAlign: 'center',
+            marginBottom: spacing.lg,
+        },
+        input: {
+            borderWidth: 1,
+            borderColor: c.border,
+            borderRadius: 8,
+            paddingVertical: spacing.sm,
+            paddingHorizontal: spacing.md,
+            fontSize: 16,
+            color: c.text,
+            backgroundColor: c.surface,
+        },
+        error: { color: c.danger, fontSize: 14 },
+        backButton: {
+            alignSelf: 'flex-start',
+            marginBottom: spacing.sm,
+            paddingVertical: spacing.xs,
+        },
+        backButtonText: {
+            color: c.textMuted,
+            fontSize: 15,
+            fontWeight: '600',
+        },
+        button: {
+            backgroundColor: c.primary,
+            borderRadius: 8,
+            paddingVertical: spacing.md,
+            alignItems: 'center',
+            marginTop: spacing.sm,
+        },
+        buttonDisabled: { opacity: 0.6 },
+        // '#fff' hardcode idi → onPrimary (primary zemini ustundeki metin)
+        buttonText: { color: c.onPrimary, fontSize: 16, fontWeight: '600' },
+        linkWrapper: {
+            alignItems: 'center',
+            marginTop: spacing.sm,
+        },
+        link: {
+            color: c.primary,
+            fontSize: 14,
+            fontWeight: '600',
+        },
+    });

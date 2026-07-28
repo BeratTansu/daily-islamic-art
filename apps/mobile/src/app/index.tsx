@@ -3,11 +3,14 @@ import { Redirect } from 'expo-router';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 import { OnboardingStorage } from '../lib/onboarding/onboardingStorage';
-import { colors } from '../constants/theme';
+import { type ThemeColors } from '../constants/theme';
+import { useTheme, useThemedStyles } from '../context/ThemeContext';
 
 
 export default function Index() {
   const { status } = useAuth();
+  const { colors } = useTheme();
+  const styles = useThemedStyles(makeStyles);
 
   // Onboarding flag'i async okunur: null = henuz bilinmiyor (spinner).
   const [onboardingDone, setOnboardingDone] = useState<boolean | null>(null);
@@ -37,11 +40,12 @@ export default function Index() {
   return <Redirect href={status === 'authenticated' ? '/feed' : '/welcome'} />;
 }
 
-const styles = StyleSheet.create({
-  center: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.background,
-  },
-});
+const makeStyles = (c: ThemeColors) =>
+  StyleSheet.create({
+    center: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: c.background,
+    },
+  });

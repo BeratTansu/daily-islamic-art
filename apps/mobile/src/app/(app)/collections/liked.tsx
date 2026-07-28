@@ -13,7 +13,8 @@ import {
     ArtworkListItem,
 } from '../../../lib/artworks/artworkService';
 import { ArtworkGrid } from '../../../components/ArtworkGrid';
-import { colors, spacing } from '../../../constants/theme';
+import { spacing, type ThemeColors } from '../../../constants/theme';
+import { useTheme, useThemedStyles } from '../../../context/ThemeContext';
 import { useNavigationGuard } from '../../../lib/hooks/useNavigationGuard';
 import { EmptyState } from '../../../components/EmptyState';
 import { ErrorState } from '../../../components/ErrorState';
@@ -23,6 +24,8 @@ const PAGE_LIMIT = 30;
 
 export default function LikedScreen() {
     const { t } = useTranslation();
+    const { colors } = useTheme();
+    const styles = useThemedStyles(makeStyles);
     const guardNavigate = useNavigationGuard();
     const [items, setItems] = useState<ArtworkListItem[]>([]);
     const [total, setTotal] = useState(0);
@@ -137,57 +140,36 @@ export default function LikedScreen() {
     );
 }
 
-const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: colors.background,
-    },
-    centered: {
-        flex: 1,
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: spacing.lg,
-        backgroundColor: colors.background,
-    },
-    header: {
-        paddingBottom: spacing.md,
-    },
-    title: {
-        fontSize: 24,
-        fontWeight: '700',
-        color: colors.text,
-    },
-    count: {
-        fontSize: 14,
-        color: colors.textMuted,
-        marginTop: 4,
-    },
-    emptyWrap: {
-        alignItems: 'center',
-        justifyContent: 'center',
-        paddingTop: spacing.xl,
-        gap: spacing.sm,
-    },
-    emptyText: {
-        color: colors.textMuted,
-        fontSize: 15,
-    },
-    errorText: {
-        color: colors.danger,
-        fontSize: 15,
-        marginBottom: spacing.md,
-    },
-    retryBtn: {
-        backgroundColor: colors.primary,
-        paddingHorizontal: spacing.lg,
-        paddingVertical: spacing.sm,
-        borderRadius: 8,
-    },
-    retryText: {
-        color: colors.background,
-        fontWeight: '600',
-    },
-    footer: {
-        paddingVertical: spacing.lg,
-    },
-});
+// Modul seviyesinde: component icine alinirsa her render'da yeni referans olur.
+// Olu stiller (emptyWrap/emptyText/errorText/retryBtn/retryText) SILINDI —
+// EmptyState/ErrorState component'lerine gecilmis, bunlar kullanilmiyordu.
+const makeStyles = (c: ThemeColors) =>
+    StyleSheet.create({
+        container: {
+            flex: 1,
+            backgroundColor: c.background,
+        },
+        centered: {
+            flex: 1,
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: spacing.lg,
+            backgroundColor: c.background,
+        },
+        header: {
+            paddingBottom: spacing.md,
+        },
+        title: {
+            fontSize: 24,
+            fontWeight: '700',
+            color: c.text,
+        },
+        count: {
+            fontSize: 14,
+            color: c.textMuted,
+            marginTop: 4,
+        },
+        footer: {
+            paddingVertical: spacing.lg,
+        },
+    });

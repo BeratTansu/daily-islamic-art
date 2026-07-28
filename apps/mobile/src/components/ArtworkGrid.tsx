@@ -7,7 +7,8 @@ import {
     type ListRenderItem,
     type RefreshControlProps,
 } from 'react-native';
-import { colors, spacing } from '../constants/theme';
+import { spacing, type ThemeColors } from '../constants/theme';
+import { useThemedStyles } from '../context/ThemeContext';
 
 // Grid'in ihtiyaç duyduğu minimal shape. CollectionArtwork da ArtworkListItem da
 // bunu karşılar (fazlası var, eksiği yok) → tek component iki tipi de yer.
@@ -42,6 +43,7 @@ export function ArtworkGrid<T extends GridArtwork>({
     ListFooterComponent,
     refreshControl,
 }: ArtworkGridProps<T>) {
+    const styles = useThemedStyles(makeStyles);
     const renderItem = useCallback<ListRenderItem<T>>(
         ({ item }) => (
             <Pressable style={styles.cell} onPress={() => onPressItem(item.slug)}>
@@ -52,7 +54,7 @@ export function ArtworkGrid<T extends GridArtwork>({
                 />
             </Pressable>
         ),
-        [onPressItem],
+        [onPressItem, styles],
     );
 
     return (
@@ -75,7 +77,7 @@ export function ArtworkGrid<T extends GridArtwork>({
 
 const GAP = spacing.sm;
 
-const styles = StyleSheet.create({
+const makeStyles = (c: ThemeColors) => StyleSheet.create({
     content: {
         padding: spacing.md,
         flexGrow: 1,
@@ -93,12 +95,12 @@ const styles = StyleSheet.create({
         borderRadius: 10,
         overflow: 'hidden',
         borderWidth: 1,
-        borderColor: colors.border,
-        backgroundColor: colors.surface,
+        borderColor: c.border,
+        backgroundColor: c.surface,
     },
     image: {
         width: '100%',
         aspectRatio: 1,
-        backgroundColor: colors.surface,
+        backgroundColor: c.surface,
     },
 });

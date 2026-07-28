@@ -10,7 +10,10 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { artworkService, type ArtworkDetail } from '../lib/artworks/artworkService';
-import { colors, spacing, fontFamily } from '../constants/theme';
+// lightColors DOGRUDAN: bu ekran bir TEMA degil bir SAHNE — kalici koyu
+// (#0F0F0F + bulanik gorsel + siyah gradient), sistem temasindan bagimsiz.
+// useTheme kullanilsaydi koyu modda primary/accent acilir, marka tonu bozulurdu.
+import { lightColors as colors, spacing, fontFamily } from '../constants/theme';
 import { useTranslation } from 'react-i18next';
 
 export default function Welcome() {

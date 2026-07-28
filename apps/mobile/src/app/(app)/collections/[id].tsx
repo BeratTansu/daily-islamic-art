@@ -14,7 +14,8 @@ import {
     CollectionDetail,
 } from '../../../lib/collections/collectionService';
 import { ArtworkGrid } from '../../../components/ArtworkGrid';
-import { colors, spacing } from '../../../constants/theme';
+import { spacing, type ThemeColors } from '../../../constants/theme';
+import { useTheme, useThemedStyles } from '../../../context/ThemeContext';
 import { useNavigationGuard } from '../../../lib/hooks/useNavigationGuard';
 import { EmptyState } from '../../../components/EmptyState';
 import { ErrorState } from '../../../components/ErrorState';
@@ -22,6 +23,8 @@ import { useTranslation } from 'react-i18next';
 
 export default function CollectionDetailScreen() {
     const { t } = useTranslation();
+    const { colors } = useTheme();
+    const styles = useThemedStyles(makeStyles);
     const guardNavigate = useNavigationGuard();
     const { id } = useLocalSearchParams<{ id: string }>();
     const [collection, setCollection] = useState<CollectionDetail | null>(null);
@@ -142,17 +145,17 @@ export default function CollectionDetailScreen() {
     );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (c: ThemeColors) => StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: colors.background,
+        backgroundColor: c.background,
     },
     centered: {
         flex: 1,
         alignItems: 'center',
         justifyContent: 'center',
         padding: spacing.lg,
-        backgroundColor: colors.background,
+        backgroundColor: c.background,
     },
     header: {
         paddingBottom: spacing.md,
@@ -160,11 +163,11 @@ const styles = StyleSheet.create({
     title: {
         fontSize: 24,
         fontWeight: '700',
-        color: colors.text,
+        color: c.text,
     },
     count: {
         fontSize: 14,
-        color: colors.textMuted,
+        color: c.textMuted,
         marginTop: 4,
     },
     emptyWrap: {
@@ -174,22 +177,22 @@ const styles = StyleSheet.create({
         gap: spacing.sm,
     },
     emptyText: {
-        color: colors.textMuted,
+        color: c.textMuted,
         fontSize: 15,
     },
     errorText: {
-        color: colors.danger,
+        color: c.danger,
         fontSize: 15,
         marginBottom: spacing.md,
     },
     retryBtn: {
-        backgroundColor: colors.primary,
+        backgroundColor: c.primary,
         paddingHorizontal: spacing.lg,
         paddingVertical: spacing.sm,
         borderRadius: 8,
     },
     retryText: {
-        color: colors.background,
+        color: c.onPrimary,
         fontWeight: '600',
     },
 });
