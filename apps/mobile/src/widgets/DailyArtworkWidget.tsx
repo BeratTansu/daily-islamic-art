@@ -7,9 +7,11 @@ export interface DailyArtworkWidgetProps {
     artistName: string | null;
     thumbUrl: string | null;
     error: boolean;
+    width: number;
+    height: number;
 }
 
-export function DailyArtworkWidget({ thumbUrl, error }: DailyArtworkWidgetProps) {
+export function DailyArtworkWidget({ thumbUrl, error, width, height }: DailyArtworkWidgetProps) {
     // Bos durum: veri yoksa marka adiyla sade kutu.
     // Hata mesaji basmiyoruz — "yalan soylemeyen ama cirkin olmayan" bos durum.
     if (error || !thumbUrl) {
@@ -40,8 +42,6 @@ export function DailyArtworkWidget({ thumbUrl, error }: DailyArtworkWidgetProps)
             style={{
                 height: 'match_parent',
                 width: 'match_parent',
-                justifyContent: 'center',
-                alignItems: 'center',
                 borderRadius: 16,
                 backgroundColor: '#F5EDE1',
             }}
@@ -49,10 +49,10 @@ export function DailyArtworkWidget({ thumbUrl, error }: DailyArtworkWidgetProps)
         >
             <ImageWidget
                 image={thumbUrl as `https:${string}`}
-                imageWidth={340}
-                imageHeight={240}
+                imageWidth={width}
+                imageHeight={height}
                 resizeMode="cover"
-                style={{ borderRadius: 16 }}
+                radius={16}
             />
         </FlexWidget>
     );

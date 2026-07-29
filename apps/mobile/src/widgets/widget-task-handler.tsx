@@ -33,7 +33,13 @@ export async function widgetTaskHandler(props: WidgetTaskHandlerProps) {
         case 'WIDGET_UPDATE':
         case 'WIDGET_RESIZED': {
             const data = await fetchDaily();
-            renderWidget(<DailyArtworkWidget {...data} />);
+            renderWidget(
+                <DailyArtworkWidget
+                    {...data}
+                    width={widgetInfo.width}
+                    height={widgetInfo.height}
+                />,
+            );
             break;
         }
 

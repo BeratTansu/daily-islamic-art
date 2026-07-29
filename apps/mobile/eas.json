@@ -12,13 +12,22 @@
       "distribution": "internal"
     },
     "production": {
-      "autoIncrement": true
+      "autoIncrement": true,
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://REPLACE-WITH-PRODUCTION-API-DOMAIN"
+      }
     },
     "production-apk": {
       "extends": "production",
       "autoIncrement": false,
       "android": {
         "buildType": "apk"
+      }
+    },
+    "local-apk": {
+      "extends": "production-apk",
+      "env": {
+        "EXPO_PUBLIC_API_URL": "http://192.168.1.100:3000"
       }
     }
   },
